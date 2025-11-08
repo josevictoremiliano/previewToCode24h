@@ -20,8 +20,8 @@ interface HeaderProps {
 export function Header({ showAuthButtons = true }: HeaderProps) {
   const { data: session, status } = useSession()
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: "/" })
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: "/", redirect: true })
   }
 
   return (
