@@ -1,0 +1,67 @@
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      )
+    }
+
+    // Buscar estatísticas do usuário
+    const [totalSites, sitesInProduction, sitesPending, sitesCompleted] = await Promise.all([
+      // Total de sites
+      prisma.project.count({
+        where: { userId: session.user.id }
+      }),
+      
+      // Sites em produção (status IN_PROGRESS)
+      prisma.project.count({
+        where: { 
+          userId: session.user.id,
+          status: 'IN_PROGRESS'
+        }
+      }),
+      
+      // Sites pendentes (status PENDING)
+      prisma.project.count({
+        where: { 
+          userId: session.user.id,
+          status: 'PENDING'
+        }
+      }),
+      
+      // Sites finalizados (status COMPLETED)
+      prisma.project.count({
+        where: { 
+          userId: session.user.id,
+          status: 'COMPLETED'
+        }
+      })
+    ])
+
+    // Calcular créditos disponíveis (exemplo: plano básico = 3 sites por mês)
+    const creditsAvailable = Math.max(0, 3 - totalSites)
+
+    return NextResponse.json({
+      totalSites,
+      sitesInProduction,
+      sitesPending,
+      sitesCompleted,
+      creditsAvailable
+    })
+
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}

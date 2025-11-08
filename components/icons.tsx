@@ -1,0 +1,113 @@
+import {
+  Loader2,
+  Mail,
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Search,
+  Settings,
+  Bell,
+  LogOut,
+  BarChart3,
+  Globe,
+  CreditCard,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  X,
+  Menu,
+  Home,
+  FileText,
+  Users,
+  Calendar,
+  Download,
+  Upload,
+  Edit,
+  Trash2,
+  Star,
+  Heart,
+  Share2,
+  Copy,
+  ExternalLink,
+  Filter,
+  SortAsc,
+  SortDesc,
+  MoreHorizontal,
+  MoreVertical,
+  ArrowRight,
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  Rocket,
+  type LucideIcon,
+} from "lucide-react"
+
+export type Icon = LucideIcon
+
+export const Icons = {
+  spinner: Loader2,
+  google: ({ ...props }: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      data-prefix="fab"
+      data-icon="google"
+      role="img"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 488 512"
+      {...props}
+    >
+      <path
+        fill="currentColor"
+        d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h240z"
+      />
+    </svg>
+  ),
+  mail: Mail,
+  user: User,
+  lock: Lock,
+  eye: Eye,
+  eyeOff: EyeOff,
+  chevronLeft: ChevronLeft,
+  chevronRight: ChevronRight,
+  plus: Plus,
+  search: Search,
+  settings: Settings,
+  bell: Bell,
+  logout: LogOut,
+  barChart: BarChart3,
+  globe: Globe,
+  creditCard: CreditCard,
+  checkCircle: CheckCircle,
+  clock: Clock,
+  alertCircle: AlertCircle,
+  x: X,
+  menu: Menu,
+  home: Home,
+  fileText: FileText,
+  users: Users,
+  calendar: Calendar,
+  download: Download,
+  upload: Upload,
+  edit: Edit,
+  trash: Trash2,
+  star: Star,
+  heart: Heart,
+  share: Share2,
+  copy: Copy,
+  externalLink: ExternalLink,
+  filter: Filter,
+  sortAsc: SortAsc,
+  sortDesc: SortDesc,
+  moreHorizontal: MoreHorizontal,
+  moreVertical: MoreVertical,
+  arrowRight: ArrowRight,
+  arrowLeft: ArrowLeft,
+  arrowUp: ArrowUp,
+  arrowDown: ArrowDown,
+  rocket: Rocket,
+}
