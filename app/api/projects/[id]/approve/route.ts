@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,10 +17,12 @@ export async function POST(
       )
     }
 
+    const { id } = await params
+
     // Verificar se o projeto existe e pertence ao usuário
     const project = await prisma.project.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: session.user.id
       }
     })
@@ -34,7 +36,7 @@ export async function POST(
 
     // Atualizar status para APPROVED
     const updatedProject = await prisma.project.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { status: 'APPROVED' }
     })
 
