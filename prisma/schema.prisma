@@ -26,6 +26,7 @@ model User {
   sessions      Session[]
   projects      Project[]
   notifications Notification[]
+  apiKeys       ApiKey[]
 
   @@map("users")
 }
@@ -145,4 +146,24 @@ model Notification {
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+// Modelo de API Keys
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String    // Nome/descrição da API key
+  key         String    @unique // A chave em si (hash)
+  keyPreview  String    @map("key_preview") // Primeiros/últimos caracteres para exibição
+  userId      String    @map("user_id")
+  active      Boolean   @default(true)
+  lastUsedAt  DateTime? @map("last_used_at")
+  expiresAt   DateTime? @map("expires_at")
+  permissions Json?     // Permissões específicas da API key
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
 }

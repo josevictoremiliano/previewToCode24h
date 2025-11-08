@@ -34,6 +34,11 @@ const sidebarItems = [
     icon: Icons.creditCard,
   },
   {
+    title: "API Keys",
+    href: "/dashboard/api-keys",
+    icon: Icons.key,
+  },
+  {
     title: "Configurações",
     href: "/dashboard/configuracoes",
     icon: Icons.settings,
