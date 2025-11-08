@@ -161,7 +161,7 @@ export default function DashboardPage() {
                 <div key={project.id} className="flex items-center space-x-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      {project.name}
+                      {project.siteName}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(project.createdAt).toLocaleDateString('pt-BR')}
@@ -243,9 +243,10 @@ export default function DashboardPage() {
                       <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75"></span>
                     )}
                     <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                      notification.type === 'PROJECT_COMPLETED' ? 'bg-green-500' :
-                      notification.type === 'PROJECT_PREVIEW' ? 'bg-blue-500' :
-                      notification.type === 'PROJECT_CREATED' ? 'bg-yellow-500' :
+                      notification.type === 'success' ? 'bg-green-500' :
+                      notification.type === 'info' ? 'bg-blue-500' :
+                      notification.type === 'warning' ? 'bg-yellow-500' :
+                      notification.type === 'error' ? 'bg-red-500' :
                       'bg-gray-500'
                     }`}></span>
                   </div>

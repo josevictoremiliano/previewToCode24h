@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Icons } from "@/components/icons"
 import { toast } from "sonner"
+import { useSubscription } from "@/hooks/use-subscription"
 
 const plans = [
   {
@@ -65,18 +66,14 @@ const plans = [
 
 export default function AssinaturaPage() {
   const [isLoading, setIsLoading] = useState(false)
-  const [usage] = useState({
-    sitesUsed: 1,
-    sitesLimit: 1,
-    storageUsed: 250, // MB
-    storageLimit: 1024, // MB
-  })
+  const { usage, isLoading: loadingUsage } = useSubscription()
 
-  const handleUpgrade = async (_planId: string) => {
+  const handleUpgrade = async (planId: string) => {
     setIsLoading(true)
     
     try {
       // Simular chamada para API de pagamento
+      console.log(`Fazendo upgrade para o plano: ${planId}`)
       await new Promise(resolve => setTimeout(resolve, 2000))
       toast.success("Redirecionando para o pagamento...")
       // Aqui você integraria com Stripe, PagSeguro, etc.
@@ -121,29 +118,35 @@ export default function AssinaturaPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Sites criados este mês</span>
-                <span>{usage.sitesUsed}/{usage.sitesLimit}</span>
+          {usage ? (
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Sites criados este mês</span>
+                  <span>{usage.sitesUsed}/{usage.sitesLimit}</span>
+                </div>
+                <Progress 
+                  value={(usage.sitesUsed / usage.sitesLimit) * 100} 
+                  className="h-2"
+                />
               </div>
-              <Progress 
-                value={(usage.sitesUsed / usage.sitesLimit) * 100} 
-                className="h-2"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Armazenamento usado</span>
-                <span>{usage.storageUsed}MB/{usage.storageLimit}MB</span>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Armazenamento usado</span>
+                  <span>{usage.storageUsed}MB/{usage.storageLimit}MB</span>
+                </div>
+                <Progress 
+                  value={(usage.storageUsed / usage.storageLimit) * 100} 
+                  className="h-2"
+                />
               </div>
-              <Progress 
-                value={(usage.storageUsed / usage.storageLimit) * 100} 
-                className="h-2"
-              />
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <Icons.spinner className="h-6 w-6 animate-spin" />
+            </div>
+          )}
         </CardContent>
       </Card>
 

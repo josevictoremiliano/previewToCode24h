@@ -1,84 +1,28 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Icons } from "@/components/icons"
-import { toast } from "sonner"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
-
-interface Notification {
-  id: string
-  type: "info" | "success" | "warning" | "error"
-  title: string
-  message: string
-  read: boolean
-  createdAt: Date
-  actionUrl?: string
-  actionLabel?: string
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "success",
-    title: "Site aprovado!",
-    message: "Seu site 'Loja de Roupas Moderna' foi aprovado e está no ar!",
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
-    actionUrl: "/dashboard/sites/1",
-    actionLabel: "Ver site"
-  },
-  {
-    id: "2",
-    type: "info",
-    title: "Site em desenvolvimento",
-    message: "Iniciamos o desenvolvimento do seu site 'Consultoria Financeira'.",
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    actionUrl: "/dashboard/sites/2",
-    actionLabel: "Acompanhar"
-  },
-  {
-    id: "3",
-    type: "warning",
-    title: "Revisão necessária",
-    message: "Seu site precisa de algumas informações adicionais antes de prosseguirmos.",
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    actionUrl: "/dashboard/sites/3",
-    actionLabel: "Revisar"
-  },
-  {
-    id: "4",
-    type: "info",
-    title: "Bem-vindo ao Site 24h!",
-    message: "Obrigado por se cadastrar! Sua jornada para ter um site incrível começa aqui.",
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-  },
-  {
-    id: "5",
-    type: "success",
-    title: "Pagamento confirmado",
-    message: "Seu pagamento foi processado com sucesso. Obrigado!",
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5), // 5 days ago
-  }
-]
+import { useNotifications } from "@/hooks/use-notifications"
 
 export default function NotificacoesPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
-  const [isLoading, setIsLoading] = useState(false)
+  const {
+    notifications,
+    unreadNotifications,
+    readNotifications,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAllRead,
+  } = useNotifications()
 
-  const unreadCount = notifications.filter(n => !n.read).length
-  const readNotifications = notifications.filter(n => n.read)
-  const unreadNotifications = notifications.filter(n => !n.read)
-
-  const getNotificationIcon = (type: Notification["type"]) => {
+  const getNotificationIcon = (type: "info" | "success" | "warning" | "error") => {
     switch (type) {
       case "success":
         return <Icons.check className="h-5 w-5 text-green-600" />
@@ -91,7 +35,7 @@ export default function NotificacoesPage() {
     }
   }
 
-  const getNotificationBadgeVariant = (type: Notification["type"]) => {
+  const getNotificationBadgeVariant = (type: "info" | "success" | "warning" | "error") => {
     switch (type) {
       case "success":
         return "default" as const
@@ -104,66 +48,23 @@ export default function NotificacoesPage() {
     }
   }
 
-  const markAsRead = async (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: true }
-          : notification
-      )
-    )
-    
-    try {
-      // Simular chamada para API
-      await new Promise(resolve => setTimeout(resolve, 500))
-    } catch {
-      toast.error("Erro ao marcar como lida")
+  interface NotificationCardProps {
+    notification: {
+      id: string
+      type: "info" | "success" | "warning" | "error"
+      title: string
+      message: string
+      read: boolean
+      createdAt: string
+      project?: {
+        id: string
+        siteName: string
+        status: string
+      }
     }
   }
 
-  const markAllAsRead = async () => {
-    setIsLoading(true)
-    
-    try {
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, read: true }))
-      )
-      
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      toast.success("Todas as notificações foram marcadas como lidas")
-    } catch {
-      toast.error("Erro ao marcar notificações como lidas")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const deleteNotification = async (notificationId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId))
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      toast.success("Notificação removida")
-    } catch {
-      toast.error("Erro ao remover notificação")
-    }
-  }
-
-  const clearAllRead = async () => {
-    setIsLoading(true)
-    
-    try {
-      setNotifications(prev => prev.filter(n => !n.read))
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      toast.success("Notificações lidas removidas")
-    } catch {
-      toast.error("Erro ao limpar notificações")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const NotificationCard = ({ notification }: { notification: Notification }) => (
+  const NotificationCard = ({ notification }: NotificationCardProps) => (
     <Card className={`transition-all duration-200 ${!notification.read ? 'border-l-4 border-l-primary bg-primary/5' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
@@ -193,16 +94,18 @@ export default function NotificacoesPage() {
             
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(notification.createdAt, { 
+                {formatDistanceToNow(new Date(notification.createdAt), { 
                   addSuffix: true, 
                   locale: ptBR 
                 })}
               </span>
               
               <div className="flex items-center gap-2">
-                {notification.actionUrl && (
-                  <Button size="sm" variant="outline">
-                    {notification.actionLabel || "Ver"}
+                {notification.project && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={`/dashboard/sites/${notification.project.id}`}>
+                      Ver Site
+                    </a>
                   </Button>
                 )}
                 

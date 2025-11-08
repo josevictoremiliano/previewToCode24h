@@ -21,11 +21,13 @@ export async function GET() {
         where: { userId: session.user.id }
       }),
       
-      // Sites em produção (status IN_PROGRESS)
+      // Sites em produção (em desenvolvimento/preview/aprovado)
       prisma.project.count({
         where: { 
           userId: session.user.id,
-          status: 'IN_PROGRESS'
+          status: {
+            in: ['PENDING', 'PREVIEW', 'APPROVED', 'REVISION']
+          }
         }
       }),
       

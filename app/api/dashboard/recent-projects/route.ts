@@ -21,7 +21,7 @@ export async function GET() {
       take: 5,
       select: {
         id: true,
-        name: true,
+        siteName: true,
         status: true,
         createdAt: true,
         previewUrl: true,
