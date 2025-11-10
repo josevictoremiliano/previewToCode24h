@@ -28,6 +28,11 @@ const adminSidebarItems = [
     icon: Icons.users,
   },
   {
+    title: "Gestão de IA",
+    href: "/admin/ai",
+    icon: Icons.bot,
+  },
+  {
     title: "Chat & Suporte",
     href: "/admin/chat",
     icon: Icons.message,

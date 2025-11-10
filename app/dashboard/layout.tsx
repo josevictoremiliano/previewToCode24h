@@ -8,7 +8,7 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <Header showAuthButtons={false} />
+      <Header showAuthButtons={true} />
       
       <div className="flex">
         <div className="hidden lg:block lg:w-64 lg:shrink-0">

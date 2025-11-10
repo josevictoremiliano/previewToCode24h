@@ -34,6 +34,9 @@ model User {
   apiKeys          ApiKey[]
   chatMessages     ChatMessage[]
   adminAssignments Project[] @relation("AdminAssignments")
+  aiConfigs        AiConfig[]
+  promptTemplates  PromptTemplate[]
+  aiUsageLogs      AiUsageLog[]
 
   @@map("users")
 }
@@ -97,6 +100,7 @@ model Project {
 
   notifications Notification[]
   chatMessages  ChatMessage[]
+  aiUsageLogs   AiUsageLog[]
 
   @@map("projects")
 }
@@ -159,4 +163,65 @@ model ChatMessage {
   updatedAt DateTime @updatedAt
 
   @@map("chat_messages")
+}
+
+// Modelo para configurações de IA
+model AiConfig {
+  id            String   @id @default(cuid())
+  provider      String   // "groq", "openai", "anthropic", etc.
+  apiKey        String   // Chave API criptografada
+  model         String   // Nome do modelo (ex: "llama3-70b", "gpt-4", etc.)
+  isActive      Boolean  @default(true)
+  maxTokens     Int      @default(4000)
+  temperature   Float    @default(0.7)
+  description   String?  // Descrição opcional
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  usageLogs     AiUsageLog[]
+
+  @@map("ai_configs")
+}
+
+// Modelo para templates de prompts
+model PromptTemplate {
+  id          String   @id @default(cuid())
+  name        String   // Nome do template (ex: "Criação de copy", "Criação de HTML")
+  key         String   @unique // Chave única (ex: "copy_creation", "html_creation")
+  prompt      String   @db.Text // Template do prompt com variáveis
+  description String?  // Descrição do que faz
+  category    String   @default("general") // Categoria (copy, html, seo, etc.)
+  isActive    Boolean  @default(true)
+  variables   Json     // Array de variáveis esperadas
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  usageLogs   AiUsageLog[]
+
+  @@map("prompt_templates")
+}
+
+// Modelo para histórico de uso de IA
+model AiUsageLog {
+  id            String   @id @default(cuid())
+  configId      String
+  config        AiConfig @relation(fields: [configId], references: [id])
+  promptId      String?
+  prompt        PromptTemplate? @relation(fields: [promptId], references: [id])
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  inputTokens   Int?
+  outputTokens  Int?
+  totalTokens   Int?
+  cost          Float?   // Custo estimado
+  responseTime  Int?     // Tempo de resposta em ms
+  success       Boolean  @default(true)
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@map("ai_usage_logs")
 }
