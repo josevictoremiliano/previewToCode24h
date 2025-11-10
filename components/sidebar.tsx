@@ -18,12 +18,12 @@ const sidebarItems = [
     icon: Icons.barChart,
   },
   {
-    title: "Meus Sites",
+    title: "Minhas Landing Pages",
     href: "/dashboard/sites",
     icon: Icons.globe,
   },
   {
-    title: "Criar Novo Site",
+    title: "Criar Landing Page",
     href: "/dashboard/criar-site",
     icon: Icons.plus,
     badge: "Novo",

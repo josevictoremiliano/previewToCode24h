@@ -122,7 +122,7 @@ export default function AssinaturaPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Sites criados este mês</span>
+                  <span>Landing pages criadas este mês</span>
                   <span>{usage.sitesUsed}/{usage.sitesLimit}</span>
                 </div>
                 <Progress 

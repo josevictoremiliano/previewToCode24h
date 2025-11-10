@@ -21,6 +21,6 @@ export async function POST(request) {
     return Response.json({ success: true, site_id: siteId, preview_url: previewUrl });
   } catch (error) {
     console.error('Error:', error);
-    return Response.json({ error: 'Erro ao criar site' }, { status: 500 });
+      return Response.json({ error: 'Erro ao criar landing page' }, { status: 500 });
   }
 }

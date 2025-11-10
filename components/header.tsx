@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Icons } from "@/components/icons"
+import { useIsAdmin } from "@/hooks/use-is-admin"
 
 interface HeaderProps {
   showAuthButtons?: boolean
@@ -19,6 +20,7 @@ interface HeaderProps {
 
 export function Header({ showAuthButtons = true }: HeaderProps) {
   const { data: session, status } = useSession()
+  const { isAdmin } = useIsAdmin()
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/", redirect: true })
@@ -94,7 +96,7 @@ export function Header({ showAuthButtons = true }: HeaderProps) {
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/sites" className="cursor-pointer">
                       <Icons.globe className="mr-2 h-4 w-4" />
-                      Meus Sites
+                      Minhas Landing Pages
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -103,6 +105,17 @@ export function Header({ showAuthButtons = true }: HeaderProps) {
                       Configurações
                     </Link>
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/dashboard" className="cursor-pointer text-blue-600">
+                          <Icons.shieldCheck className="mr-2 h-4 w-4" />
+                          Painel Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     className="cursor-pointer text-red-600 focus:text-red-600"

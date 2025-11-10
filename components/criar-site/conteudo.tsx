@@ -26,25 +26,27 @@ interface Props {
 }
 
 const availableSections = [
-  { id: "sobre", label: "Sobre", description: "História e valores da empresa" },
-  { id: "servicos", label: "Serviços", description: "O que você oferece" },
-  { id: "portfolio", label: "Portfólio", description: "Trabalhos realizados" },
-  { id: "depoimentos", label: "Depoimentos", description: "Feedback dos clientes" },
-  { id: "contato", label: "Contato", description: "Informações de contato" },
-  { id: "blog", label: "Blog", description: "Artigos e notícias" },
-  { id: "faq", label: "FAQ", description: "Perguntas frequentes" },
-  { id: "equipe", label: "Equipe", description: "Conheça nosso time" },
+  { id: "hero", label: "Seção Hero", description: "Título principal e proposta de valor" },
+  { id: "beneficios", label: "Benefícios", description: "Principais vantagens do produto/serviço" },
+  { id: "como-funciona", label: "Como Funciona", description: "Processo passo a passo" },
+  { id: "depoimentos", label: "Depoimentos", description: "Prova social e testemunhos" },
+  { id: "precos", label: "Preços", description: "Planos e valores" },
+  { id: "faq", label: "FAQ", description: "Dúvidas frequentes" },
+  { id: "garantia", label: "Garantia", description: "Política de satisfação" },
+  { id: "urgencia", label: "Urgência", description: "Ofertas por tempo limitado" },
 ]
 
 const ctaOptions = [
-  "Fale Conosco",
-  "Solicite um Orçamento",
   "Comprar Agora",
-  "Saiba Mais",
-  "Entre em Contato",
-  "Agende uma Consulta",
-  "Baixe Grátis",
-  "Cadastre-se",
+  "Começar Agora",
+  "Experimentar Grátis",
+  "Baixar Grátis",
+  "Inscrever-se",
+  "Solicitar Acesso",
+  "Garantir Desconto",
+  "Participar Agora",
+  "Solicitar Demo",
+  "Agendar Consulta",
 ]
 
 export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
@@ -81,7 +83,7 @@ export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
     e.preventDefault()
     
     if (!formData.description.trim()) {
-      toast.error("Descrição do negócio é obrigatória")
+      toast.error("Proposta de valor é obrigatória")
       return
     }
 
@@ -93,10 +95,10 @@ export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icons.fileText className="h-5 w-5" />
-          Conteúdo do Site
+          Conteúdo da Landing Page
         </CardTitle>
         <CardDescription>
-          Descreva seu negócio e estruture o conteúdo
+          Defina o conteúdo persuasivo da sua landing page
         </CardDescription>
       </CardHeader>
       
@@ -104,11 +106,11 @@ export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="description">
-              Descrição do Negócio/Site <span className="text-red-500">*</span>
+              Proposta de Valor <span className="text-red-500">*</span>
             </Label>
             <Textarea
               id="description"
-              placeholder="Conte sobre sua empresa, o que faz, seus diferenciais..."
+              placeholder="O que você oferece? Qual problema resolve? Quais os principais benefícios?"
               value={formData.description}
               onChange={(e) => handleChange("description", e.target.value)}
               rows={4}
@@ -120,17 +122,17 @@ export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
             <Label htmlFor="targetAudience">Público-alvo</Label>
             <Input
               id="targetAudience"
-              placeholder="Ex: Pequenas empresas, jovens profissionais, famílias..."
+              placeholder="Ex: Empreendedores digitais, gestores de marketing, freelancers..."
               value={formData.targetAudience}
               onChange={(e) => handleChange("targetAudience", e.target.value)}
             />
           </div>
 
           <div className="space-y-3">
-            <Label>Principais Produtos/Serviços</Label>
+            <Label>O que você está oferecendo?</Label>
             <div className="flex gap-2">
               <Input
-                placeholder="Digite um produto ou serviço"
+                placeholder="Ex: Curso online, Software, Consultoria..."
                 value={newProduct}
                 onChange={(e) => setNewProduct(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addProduct())}

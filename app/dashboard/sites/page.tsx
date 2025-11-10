@@ -10,12 +10,39 @@ import { Icons } from "@/components/icons"
 import Link from "next/link"
 import Image from "next/image"
 import { useProjects } from "@/hooks/use-projects"
+import { toast } from "sonner"
 
 export default function MeusSitesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
   
-  const { projects, isLoading, error } = useProjects(searchTerm, statusFilter)
+  const { projects, isLoading, error, refetch } = useProjects(searchTerm, statusFilter)
+
+  const handleCancelProject = async (projectId: string) => {
+    if (!confirm("Tem certeza que deseja cancelar este projeto? Esta ação não pode ser desfeita.")) {
+      return
+    }
+
+    setCancellingId(projectId)
+    try {
+      const response = await fetch(`/api/projects/${projectId}/cancel`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao cancelar projeto')
+      }
+
+      toast.success("Projeto cancelado com sucesso")
+      refetch()
+    } catch (error) {
+      console.error('Erro ao cancelar projeto:', error)
+      toast.error("Erro ao cancelar projeto. Tente novamente.")
+    } finally {
+      setCancellingId(null)
+    }
+  }
 
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -49,10 +76,15 @@ export default function MeusSitesPage() {
           badge: <Badge className="bg-orange-100 text-orange-800">Revisão</Badge>,
           color: "text-orange-600"
         }
+      case "CANCELLED":
+        return { 
+          badge: <Badge className="bg-red-100 text-red-800">Cancelado</Badge>,
+          color: "text-red-600"
+        }
       default:
         return { 
           badge: <Badge variant="secondary">{status}</Badge>,
-          color: "text-gray-600"
+          color: "text-muted-foreground"
         }
     }
   }
@@ -109,9 +141,9 @@ export default function MeusSitesPage() {
       {/* Cabeçalho */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Meus Sites</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Minhas Landing Pages</h1>
           <p className="text-muted-foreground">
-            Gerencie todos os seus sites criados
+            Gerencie todas as suas landing pages criadas
           </p>
         </div>
         <Button asChild>
@@ -151,7 +183,7 @@ export default function MeusSitesPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Icons.globe className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum site encontrado</h3>
+            <h3 className="text-lg font-semibold mb-2">Nenhuma landing page encontrada</h3>
             <p className="text-muted-foreground mb-4 text-center">
               {searchTerm || statusFilter !== "all" 
                 ? "Tente ajustar os filtros de busca" 
@@ -231,22 +263,42 @@ export default function MeusSitesPage() {
                   </div>
                   
                   <div className="flex justify-between items-center pt-2 border-t">
-                    <Button variant="ghost" size="sm">
-                      <Icons.download className="mr-1 h-3 w-3" />
-                      Baixar
-                    </Button>
-                    
-                    {site.status === "PREVIEW" && (
-                      <Button size="sm">
-                        Aprovar
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm">
+                        <Icons.download className="mr-1 h-3 w-3" />
+                        Baixar
                       </Button>
-                    )}
+                      
+                      {site.status === "PENDING" && (
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => handleCancelProject(site.id)}
+                          disabled={cancellingId === site.id}
+                        >
+                          {cancellingId === site.id ? (
+                            <Icons.spinner className="mr-1 h-3 w-3 animate-spin" />
+                          ) : (
+                            <Icons.x className="mr-1 h-3 w-3" />
+                          )}
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
                     
-                    {site.status === "COMPLETED" && (
-                      <Button size="sm">
-                        Publicar
-                      </Button>
-                    )}
+                    <div>
+                      {site.status === "PREVIEW" && (
+                        <Button size="sm">
+                          Aprovar
+                        </Button>
+                      )}
+                      
+                      {site.status === "COMPLETED" && (
+                        <Button size="sm">
+                          Publicar
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

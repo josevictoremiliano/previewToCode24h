@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         project: {
           select: {
             id: true,
-            siteName: true,
+            name: true,
             status: true,
           }
         }

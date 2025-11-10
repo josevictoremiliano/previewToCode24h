@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Criar notificação para o usuário
-    const notificationData = getNotificationData(status, project.siteName, message)
+    const notificationData = getNotificationData(status, project.name, message)
     
     await prisma.notification.create({
       data: {

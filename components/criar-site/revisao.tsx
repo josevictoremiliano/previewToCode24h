@@ -99,7 +99,7 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
           Revisão Final
         </CardTitle>
         <CardDescription>
-          Confirme todas as informações antes de criar seu site
+          Confirme todas as informações antes de criar sua landing page
         </CardDescription>
       </CardHeader>
       
@@ -110,17 +110,17 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
             <h3 className="text-lg font-semibold">Informações Básicas</h3>
             <div className="grid gap-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Nome do Site:</span>
+                <span className="text-muted-foreground">Nome da Landing Page:</span>
                 <span className="font-medium">{data.basicInfo.siteName}</span>
               </div>
               {data.basicInfo.slogan && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Slogan:</span>
+                  <span className="text-muted-foreground">Headline:</span>
                   <span className="font-medium">{data.basicInfo.slogan}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Tipo de Site:</span>
+                <span className="text-muted-foreground">Tipo de Landing Page:</span>
                 <Badge variant="secondary">{data.basicInfo.siteType}</Badge>
               </div>
               {data.basicInfo.niche && (
@@ -325,7 +325,7 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
                   Li e concordo com os termos de uso
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Ao confirmar, você concorda que processaremos suas informações para criar seu site personalizado.
+                  Ao confirmar, você concorda que processaremos suas informações para criar sua landing page personalizada.
                   Você receberá um preview em até 12 horas e o site final em até 24 horas.
                 </p>
               </div>
@@ -346,7 +346,7 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
               ) : (
                 <>
                   <Icons.checkCircle className="mr-2 h-4 w-4" />
-                  Confirmar e Criar Site
+                  Confirmar e Criar Landing Page
                 </>
               )}
             </Button>

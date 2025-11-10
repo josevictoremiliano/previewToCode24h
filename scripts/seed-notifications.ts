@@ -52,7 +52,7 @@ async function main() {
       userId: user.id,
       type: "info",
       title: "Projeto em andamento",
-      message: `Seu site "${projects[0].siteName}" está sendo desenvolvido. Em breve você receberá o preview!`,
+      message: `Seu site "${projects[0].name}" está sendo desenvolvido. Em breve você receberá o preview!`,
       read: false,
       createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
     })
@@ -63,7 +63,7 @@ async function main() {
       userId: user.id,
       type: "success",
       title: "Site finalizado!",
-      message: `Seu site "${projects[1].siteName}" foi finalizado e está disponível!`,
+      message: `Seu site "${projects[1].name}" foi finalizado e está disponível!`,
       read: false,
       createdAt: new Date(Date.now() - 1000 * 60 * 15), // 15 min ago
     })

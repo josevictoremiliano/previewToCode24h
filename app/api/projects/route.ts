@@ -65,14 +65,14 @@ export async function GET(request: NextRequest) {
     // Construir filtros
     const where: {
       userId: string
-      siteName?: { contains: string; mode: 'insensitive' }
+      name?: { contains: string; mode: 'insensitive' }
       status?: 'PENDING' | 'PREVIEW' | 'APPROVED' | 'COMPLETED' | 'PUBLISHED' | 'REVISION'
     } = {
       userId: session.user.id
     }
 
     if (search) {
-      where.siteName = {
+      where.name = {
         contains: search,
         mode: 'insensitive'
       }
@@ -88,22 +88,22 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
-        siteName: true,
+        name: true,
         status: true,
         createdAt: true,
         previewUrl: true,
-        finalUrl: true
+        publishUrl: true
       }
     })
 
     // Mapear para formato esperado pelo frontend
     const mappedProjects = projects.map(project => ({
       id: project.id,
-      name: project.siteName,
+      name: project.name,
       status: project.status,
       createdAt: project.createdAt,
       previewUrl: project.previewUrl,
-      finalUrl: project.finalUrl,
+      finalUrl: project.publishUrl,
       thumbnailUrl: "/api/placeholder/400/300"
     }))
 
@@ -147,27 +147,8 @@ export async function POST(request: NextRequest) {
       data: {
         userId: data.userId,
         status: "PENDING",
-        siteName: data.basicInfo.siteName,
-        slogan: data.basicInfo.slogan,
-        siteType: data.basicInfo.siteType,
-        niche: data.basicInfo.niche,
-        logoUrl: data.visualIdentity.logoUrl,
-        primaryColor: data.visualIdentity.primaryColor,
-        secondaryColor: data.visualIdentity.secondaryColor,
-        style: data.visualIdentity.style,
-        referenceUrls: data.visualIdentity.referenceUrls,
-        description: data.content.description,
-        targetAudience: data.content.targetAudience,
-        products: data.content.products,
-        cta: data.content.cta,
-        sections: data.content.sections,
-        contactEmail: data.contact.email,
-        contactPhone: data.contact.phone,
-        contactAddress: data.contact.address,
-        socialMedia: data.contact.socialMedia,
-        images: data.additionalResources.images,
-        customTexts: data.additionalResources.customTexts,
-        features: data.additionalResources.features,
+        name: data.basicInfo.siteName,
+        data: data, // Salva todos os dados do projeto no campo JSON
       },
     })
 
@@ -177,7 +158,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         projectId: project.id,
         type: "PROJECT_CREATED",
-        title: "Site criado com sucesso!",
+        title: "Landing page criada com sucesso!",
         message: `Seu site "${data.basicInfo.siteName}" foi criado e está sendo processado. Você receberá um preview em até 12 horas.`,
       },
     })
@@ -218,7 +199,7 @@ export async function POST(request: NextRequest) {
       { 
         project: {
           id: project.id,
-          siteName: project.siteName,
+          siteName: project.name,
           status: project.status,
           createdAt: project.createdAt,
         },

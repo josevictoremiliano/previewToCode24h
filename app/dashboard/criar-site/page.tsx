@@ -105,11 +105,11 @@ const initialFormData: FormData = {
 }
 
 const steps = [
-  { id: 1, title: "Informações Básicas", description: "Nome, tipo e nicho do site" },
+  { id: 1, title: "Informações Básicas", description: "Nome, tipo e nicho da landing page" },
   { id: 2, title: "Identidade Visual", description: "Logo, cores e estilo" },
-  { id: 3, title: "Conteúdo", description: "Descrição e estrutura" },
+  { id: 3, title: "Conteúdo", description: "Proposta de valor e estrutura" },
   { id: 4, title: "Contato", description: "Informações de contato" },
-  { id: 5, title: "Recursos Extras", description: "Imagens e funcionalidades" },
+  { id: 5, title: "Recursos de Conversão", description: "Elementos que aumentam vendas" },
   { id: 6, title: "Revisão", description: "Confirmar e enviar" }
 ]
 
@@ -182,12 +182,12 @@ export default function CriarSitePage() {
 
       await response.json()
 
-      toast.success("Site criado com sucesso! Você receberá um preview em até 12 horas.")
+      toast.success("Landing page criada com sucesso! Você receberá um preview em até 12 horas.")
       router.push(`/dashboard/sites`)
 
     } catch (error) {
-      console.error("Erro ao criar site:", error)
-      toast.error("Erro ao criar site. Tente novamente.")
+      console.error("Erro ao criar landing page:", error)
+      toast.error("Erro ao criar landing page. Tente novamente.")
     } finally {
       setIsSubmitting(false)
     }

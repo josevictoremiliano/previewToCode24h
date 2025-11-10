@@ -12,7 +12,7 @@ interface DashboardStats {
 
 interface RecentProject {
   id: string
-  siteName: string
+  name: string
   status: string
   createdAt: string
 }

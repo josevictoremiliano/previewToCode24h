@@ -24,33 +24,34 @@ interface Props {
 }
 
 const siteTypes = [
-  { value: "landing-page", label: "Landing Page" },
-  { value: "institucional", label: "Site Institucional" },
-  { value: "portfolio", label: "Portfólio" },
-  { value: "loja-virtual", label: "Loja Virtual" },
-  { value: "blog", label: "Blog" },
-  { value: "servicos", label: "Serviços" },
-  { value: "restaurante", label: "Restaurante" },
-  { value: "consultoria", label: "Consultoria" },
-  { value: "educacao", label: "Educação" },
-  { value: "saude", label: "Saúde" },
+  { value: "produto", label: "Landing Page - Produto" },
+  { value: "servico", label: "Landing Page - Serviço" },
+  { value: "evento", label: "Landing Page - Evento" },
+  { value: "captura", label: "Landing Page - Captura de Leads" },
+  { value: "vendas", label: "Landing Page - Vendas" },
+  { value: "lancamento", label: "Landing Page - Lançamento" },
+  { value: "promocional", label: "Landing Page - Promocional" },
+  { value: "curso", label: "Landing Page - Curso/Treinamento" },
+  { value: "aplicativo", label: "Landing Page - App/Software" },
+  { value: "empresa", label: "Landing Page - Institucional" },
 ]
 
 const niches = [
-  { value: "tecnologia", label: "Tecnologia" },
-  { value: "saude", label: "Saúde" },
-  { value: "educacao", label: "Educação" },
-  { value: "financas", label: "Finanças" },
-  { value: "marketing", label: "Marketing" },
-  { value: "design", label: "Design" },
-  { value: "consultoria", label: "Consultoria" },
-  { value: "alimentacao", label: "Alimentação" },
-  { value: "moda", label: "Moda" },
-  { value: "esportes", label: "Esportes" },
-  { value: "turismo", label: "Turismo" },
-  { value: "imobiliario", label: "Imobiliário" },
-  { value: "juridico", label: "Jurídico" },
-  { value: "beleza", label: "Beleza" },
+  { value: "saas", label: "SaaS/Software" },
+  { value: "ecommerce", label: "E-commerce/Vendas" },
+  { value: "consultoria", label: "Consultoria/Serviços" },
+  { value: "educacao", label: "Cursos/Educação" },
+  { value: "saude", label: "Saúde/Bem-estar" },
+  { value: "financas", label: "Finanças/Investimentos" },
+  { value: "marketing", label: "Marketing Digital" },
+  { value: "imobiliario", label: "Imóveis/Construção" },
+  { value: "eventos", label: "Eventos/Webinars" },
+  { value: "alimentacao", label: "Alimentação/Delivery" },
+  { value: "beleza", label: "Beleza/Estética" },
+  { value: "juridico", label: "Jurídico/Advocacia" },
+  { value: "fitness", label: "Fitness/Academia" },
+  { value: "turismo", label: "Turismo/Viagens" },
+  { value: "tecnologia", label: "Tecnologia/TI" },
   { value: "outro", label: "Outro" },
 ]
 
@@ -67,12 +68,12 @@ export function InformacoesBasicas({ data, onUpdate, onNext }: Props) {
     e.preventDefault()
     
     if (!formData.siteName.trim()) {
-      toast.error("Nome do site é obrigatório")
+      toast.error("Nome da landing page é obrigatório")
       return
     }
     
     if (!formData.siteType) {
-      toast.error("Selecione o tipo do site")
+      toast.error("Selecione o tipo da landing page")
       return
     }
 
@@ -87,7 +88,7 @@ export function InformacoesBasicas({ data, onUpdate, onNext }: Props) {
           Informações Básicas
         </CardTitle>
         <CardDescription>
-          Conte-nos sobre seu projeto e negócio
+          Vamos criar sua landing page personalizada em até 24 horas
         </CardDescription>
       </CardHeader>
       
@@ -96,11 +97,11 @@ export function InformacoesBasicas({ data, onUpdate, onNext }: Props) {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="siteName">
-                Nome do Site/Empresa <span className="text-red-500">*</span>
+                Nome da Landing Page <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="siteName"
-                placeholder="Ex: Minha Empresa Ltda"
+                placeholder="Ex: Lançamento Produto X"
                 value={formData.siteName}
                 onChange={(e) => handleChange("siteName", e.target.value)}
                 required
@@ -108,10 +109,10 @@ export function InformacoesBasicas({ data, onUpdate, onNext }: Props) {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="slogan">Slogan/Frase de Efeito</Label>
+              <Label htmlFor="slogan">Headline Principal</Label>
               <Input
                 id="slogan"
-                placeholder="Ex: Transformando ideias em realidade"
+                placeholder="Ex: Revolucione seu negócio em 30 dias"
                 value={formData.slogan}
                 onChange={(e) => handleChange("slogan", e.target.value)}
               />
@@ -121,11 +122,11 @@ export function InformacoesBasicas({ data, onUpdate, onNext }: Props) {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="siteType">
-                Tipo de Site <span className="text-red-500">*</span>
+                Tipo de Landing Page <span className="text-red-500">*</span>
               </Label>
               <Select value={formData.siteType} onValueChange={(value) => handleChange("siteType", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
+                  <SelectValue placeholder="Qual tipo de landing page?" />
                 </SelectTrigger>
                 <SelectContent>
                   {siteTypes.map((type) => (

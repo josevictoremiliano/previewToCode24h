@@ -7,10 +7,22 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Não autorizado' },
         { status: 401 }
+      )
+    }
+
+    // Buscar o usuário pelo email
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado' },
+        { status: 404 }
       )
     }
 
@@ -18,13 +30,13 @@ export async function GET() {
     const [totalSites, sitesInProduction, sitesPending, sitesCompleted] = await Promise.all([
       // Total de sites
       prisma.project.count({
-        where: { userId: session.user.id }
+        where: { userId: user.id }
       }),
       
       // Sites em produção (em desenvolvimento/preview/aprovado)
       prisma.project.count({
         where: { 
-          userId: session.user.id,
+          userId: user.id,
           status: {
             in: ['PENDING', 'PREVIEW', 'APPROVED', 'REVISION']
           }
@@ -34,7 +46,7 @@ export async function GET() {
       // Sites pendentes (status PENDING)
       prisma.project.count({
         where: { 
-          userId: session.user.id,
+          userId: user.id,
           status: 'PENDING'
         }
       }),
@@ -42,7 +54,7 @@ export async function GET() {
       // Sites finalizados (status COMPLETED)
       prisma.project.count({
         where: { 
-          userId: session.user.id,
+          userId: user.id,
           status: 'COMPLETED'
         }
       })

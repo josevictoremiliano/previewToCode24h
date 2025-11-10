@@ -24,14 +24,14 @@ interface Props {
 }
 
 const availableFeatures = [
-  { id: "contact-form", label: "Formulário de Contato", description: "Permite visitantes enviarem mensagens" },
-  { id: "whatsapp-chat", label: "Chat WhatsApp", description: "Botão flutuante para WhatsApp" },
-  { id: "newsletter", label: "Newsletter", description: "Cadastro para receber emails" },
-  { id: "testimonials", label: "Depoimentos", description: "Seção de feedbacks de clientes" },
-  { id: "gallery", label: "Galeria de Imagens", description: "Showcase de trabalhos/produtos" },
-  { id: "blog", label: "Blog/Notícias", description: "Seção para artigos e atualizações" },
-  { id: "maps", label: "Mapa de Localização", description: "Google Maps integrado" },
-  { id: "social-feed", label: "Feed Social", description: "Posts do Instagram/Facebook" },
+  { id: "lead-form", label: "Formulário de Captura", description: "Coleta emails e dados de prospects" },
+  { id: "countdown-timer", label: "Timer de Urgência", description: "Conta regressiva para ofertas" },
+  { id: "whatsapp-chat", label: "Chat WhatsApp", description: "Atendimento direto via WhatsApp" },
+  { id: "testimonials", label: "Depoimentos", description: "Prova social com feedbacks" },
+  { id: "pricing-table", label: "Tabela de Preços", description: "Comparação de planos/produtos" },
+  { id: "video-hero", label: "Vídeo de Apresentação", description: "Player de vídeo na hero section" },
+  { id: "popup-exit", label: "Pop-up de Saída", description: "Oferta quando usuário tenta sair" },
+  { id: "progress-bar", label: "Barra de Progresso", description: "Passos do processo de compra" },
 ]
 
 export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props) {
@@ -85,10 +85,10 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icons.plus className="h-5 w-5" />
-          Recursos Adicionais
+          Recursos de Conversão
         </CardTitle>
         <CardDescription>
-          Personalize ainda mais seu site
+          Adicione elementos que aumentam a conversão
         </CardDescription>
       </CardHeader>
       
@@ -96,9 +96,9 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Upload de Imagens */}
           <div className="space-y-3">
-            <Label>Imagens do Negócio (Opcional)</Label>
+            <Label>Imagens do Produto/Serviço (Opcional)</Label>
             <p className="text-sm text-muted-foreground">
-              Adicione fotos de produtos, serviços, equipe ou ambiente. Máximo 10 imagens, 5MB cada.
+              Adicione imagens do produto, mockups, resultados ou equipe. Máximo 10 imagens, 5MB cada.
             </p>
             
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">

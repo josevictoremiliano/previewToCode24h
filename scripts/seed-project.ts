@@ -17,7 +17,7 @@ async function main() {
   const project = await prisma.project.create({
     data: {
       userId: user.id,
-      siteName: "Loja de Roupas Online",
+      name: "Loja de Roupas Online",
       slogan: "Estilo e qualidade para todos",
       siteType: "E-commerce",
       niche: "Moda",
@@ -32,7 +32,7 @@ async function main() {
     }
   })
 
-  console.log(`✅ Projeto criado: ${project.siteName} (ID: ${project.id})`)
+  console.log(`✅ Projeto criado: ${project.name} (ID: ${project.id})`)
 
   // Criar uma notificação relacionada ao projeto
   await prisma.notification.create({
@@ -41,7 +41,7 @@ async function main() {
       projectId: project.id,
       type: "success",
       title: "Preview do site pronto!",
-      message: `Seu site "${project.siteName}" está pronto para revisão. Clique para visualizar o preview.`,
+      message: `Seu site "${project.name}" está pronto para revisão. Clique para visualizar o preview.`,
       read: false,
     }
   })
