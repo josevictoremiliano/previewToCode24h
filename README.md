@@ -1,36 +1,163 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Preview to Code 24h
 
-## Getting Started
+Sistema completo de geração de sites com IA integrada. Este projeto permite que usuários solicitem sites personalizados e que administradores gerenciem todo o processo com processamento de IA interno.
 
-First, run the development server:
+## 🚀 Funcionalidades
+
+### Para Usuários
+- ✅ Solicitação de projetos com formulário detalhado
+- ✅ Acompanhamento de status dos projetos
+- ✅ Sistema de notificações em tempo real
+- ✅ Dashboard personalizado
+
+### Para Administradores
+- ✅ Gestão completa de usuários e projetos
+- ✅ Sistema de gestão de IA integrado
+- ✅ Configuração de modelos de IA (Groq, OpenAI, etc.)
+- ✅ Templates de prompts personalizáveis
+- ✅ Processamento de projetos com IA interno
+- ✅ Logs e métricas de uso
+
+## 🛠️ Tecnologias
+
+- **Framework:** Next.js 16.0.1 com Turbopack
+- **Autenticação:** NextAuth.js com suporte a múltiplos provedores
+- **Banco de Dados:** Prisma ORM (SQLite/PostgreSQL)
+- **IA:** OpenAI SDK configurado para Groq
+- **UI:** Tailwind CSS + Shadcn/ui
+- **Segurança:** Criptografia AES-256-GCM para API keys
+
+## 🏗️ Configuração
+
+### 1. Instalação
+
+```bash
+npm install
+# ou
+yarn install
+# ou
+pnpm install
+```
+
+### 2. Configuração do Banco de Dados
+
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+### 3. Variáveis de Ambiente
+
+Copie o arquivo `.env.example` para `.env.local` e configure:
+
+```env
+# Database
+DATABASE_URL="file:./dev.db"
+
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-here"
+
+# Encryption Key (32 caracteres)
+ENCRYPTION_KEY="your-32-character-encryption-key"
+
+# OAuth (opcional)
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+```
+
+### 4. Executar o Projeto
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 👤 Primeiro Acesso
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Faça login com qualquer provedor OAuth
+2. Acesse o banco de dados e altere o `role` do seu usuário para `ADMIN`
+3. Acesse `/admin` para configurar o sistema
 
-## Learn More
+## 🤖 Configuração da IA
 
-To learn more about Next.js, take a look at the following resources:
+1. Acesse `/admin/ai` (apenas administradores)
+2. Adicione uma configuração de IA:
+   - **Nome:** Nome identificador
+   - **Modelo:** ex: `llama3-8b-8192`
+   - **API Key:** Sua chave da Groq/OpenAI
+   - **Base URL:** `https://api.groq.com/openai/v1` (para Groq)
+3. Crie templates de prompts personalizados
+4. Teste as configurações
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📁 Estrutura do Projeto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+app/
+├── admin/              # Painel administrativo
+│   ├── ai/            # Gestão de IA
+│   ├── projects/      # Gestão de projetos
+│   └── users/         # Gestão de usuários
+├── api/               # Endpoints da API
+├── auth/              # Configuração de autenticação
+├── dashboard/         # Dashboard do usuário
+└── projects/          # Páginas de projetos
 
-## Deploy on Vercel
+lib/
+├── ai-processor.ts    # Processamento de IA
+├── auth.ts           # Configuração NextAuth
+├── crypto.ts         # Funções de criptografia
+├── db.ts            # Cliente Prisma
+└── utils.ts         # Utilitários
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+prisma/
+├── schema.prisma     # Schema do banco
+└── migrations/       # Migrações
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔒 Segurança
+
+- **Criptografia:** API keys são criptografadas com AES-256-GCM
+- **Autenticação:** NextAuth com provedores OAuth
+- **Autorização:** Sistema baseado em roles (USER/ADMIN)
+- **Validação:** Zod para validação de dados
+
+## 📊 Métricas e Logs
+
+O sistema registra automaticamente:
+- Uso de IA (tokens, custo, tempo)
+- Ações administrativas
+- Erros e performance
+- Notificações enviadas
+
+## 🚀 Deploy
+
+### Vercel (Recomendado)
+
+1. Conecte o repositório no Vercel
+2. Configure as variáveis de ambiente
+3. Configure um banco PostgreSQL
+4. Deploy automático
+
+### Outros Provedores
+
+1. Build do projeto: `npm run build`
+2. Configure variáveis de ambiente
+3. Execute: `npm start`
+
+## 📝 Licença
+
+Este projeto é privado e proprietário.
+
+## 🤝 Contribuição
+
+Para contribuir:
+1. Fork o projeto
+2. Crie uma branch para sua feature
+3. Commit suas alterações
+4. Abra um Pull Request
+
+## 📞 Suporte
+
+Para suporte técnico, entre em contato através dos canais oficiais.

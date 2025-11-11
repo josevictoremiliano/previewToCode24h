@@ -154,7 +154,7 @@ export default function ApiKeysPage() {
         <div>
           <h1 className="text-3xl font-bold">API Keys</h1>
           <p className="text-muted-foreground">
-            Gerencie chaves de API para integrações externas (n8n, webhooks, etc.)
+            Gerencie chaves de API para integrações externas e automações
           </p>
         </div>
 
@@ -169,7 +169,7 @@ export default function ApiKeysPage() {
             <DialogHeader>
               <DialogTitle>Criar Nova API Key</DialogTitle>
               <DialogDescription>
-                Crie uma nova chave de API para integrar com sistemas externos como n8n.
+                Crie uma nova chave de API para integrar com sistemas externos.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -177,7 +177,7 @@ export default function ApiKeysPage() {
                 <Label htmlFor="keyName">Nome da API Key</Label>
                 <Input
                   id="keyName"
-                  placeholder="Ex: n8n Production, Webhook Sistema X"
+                  placeholder="Ex: Sistema Produção, Integração Externa"
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
                 />
@@ -354,23 +354,23 @@ export default function ApiKeysPage() {
         <CardHeader>
           <CardTitle>Como usar as API Keys</CardTitle>
           <CardDescription>
-            Instruções para integrar com n8n e outros sistemas
+            Instruções para integrar com sistemas externos
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <h4 className="font-medium mb-2">1. Atualizando status de projetos (n8n)</h4>
+            <h4 className="font-medium mb-2">1. Atualizando status de projetos</h4>
             <div className="bg-gray-100 p-3 rounded font-mono text-sm">
-              <div>POST /api/n8n/update-project</div>
+              <div>POST /api/admin/projects/[id]/status</div>
               <div>Headers: X-API-Key: sua_api_key_aqui</div>
-              <div>Body: {`{ "projectId": "...", "status": "PREVIEW", "previewUrl": "..." }`}</div>
+              <div>Body: {`{ "status": "PREVIEW", "previewUrl": "..." }`}</div>
             </div>
           </div>
           
           <div>
-            <h4 className="font-medium mb-2">2. Buscando projetos</h4>
+            <h4 className="font-medium mb-2">2. Listando projetos</h4>
             <div className="bg-gray-100 p-3 rounded font-mono text-sm">
-              <div>GET /api/n8n/projects?status=PENDING</div>
+              <div>GET /api/admin/projects?status=PENDING</div>
               <div>Headers: X-API-Key: sua_api_key_aqui</div>
             </div>
           </div>

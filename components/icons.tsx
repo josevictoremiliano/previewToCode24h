@@ -67,6 +67,12 @@ import {
   PlayCircle,
   Pause,
   PauseCircle,
+  Monitor,
+  Tablet,
+  Smartphone,
+  Maximize,
+  Minimize,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react"
 
@@ -160,4 +166,10 @@ export const Icons = {
   playCircle: PlayCircle,
   pause: Pause,
   pauseCircle: PauseCircle,
+  monitor: Monitor,
+  tablet: Tablet,
+  smartphone: Smartphone,
+  maximize: Maximize,
+  minimize: Minimize,
+  refresh: RefreshCw,
 }

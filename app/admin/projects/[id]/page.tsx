@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Icons } from "@/components/icons"
+import { PreviewPanel } from "@/components/admin/preview-panel"
 import { toast } from "sonner"
 
 interface Project {
@@ -117,12 +118,12 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
     }
   }
 
-  const sendToWebhook = async () => {
+  const processWithAI = async () => {
     if (!project) return
 
     setIsSendingWebhook(true)
     try {
-      const response = await fetch(`/api/admin/projects/${project.id}/webhook`, {
+      const response = await fetch(`/api/admin/projects/${project.id}/process-ai`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -136,16 +137,21 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
       }
 
       const result = await response.json()
-      toast.success("Dados enviados para geração do site com sucesso!")
+      toast.success("Processamento com IA iniciado com sucesso!")
       
-      // Atualizar o projeto para mostrar nova URL de preview se fornecida
-      if (result.previewUrl) {
-        setProject(prev => prev ? {...prev, previewUrl: result.previewUrl} : null)
-      }
+      // Atualizar o status do projeto
+      setProject(prev => prev ? {...prev, status: 'PROCESSING'} : null)
+      setSelectedStatus('PROCESSING')
+      
+      // Recarregar projeto para obter dados atualizados
+      setTimeout(() => {
+        fetchProject(project.id)
+      }, 2000)
+      
     } catch (error) {
-      console.error('Erro ao enviar webhook:', error)
+      console.error('Erro ao processar com IA:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-      toast.error(`Erro ao enviar dados para webhook: ${errorMessage}`)
+      toast.error(`Erro ao processar com IA: ${errorMessage}`)
     } finally {
       setIsSendingWebhook(false)
     }
@@ -179,6 +185,7 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       PENDING: { color: "bg-yellow-100 text-yellow-800", label: "Pendente" },
+      PROCESSING: { color: "bg-blue-100 text-blue-800", label: "Processando" },
       PREVIEW: { color: "bg-blue-100 text-blue-800", label: "Preview" },
       APPROVED: { color: "bg-purple-100 text-purple-800", label: "Aprovado" },
       REVISION: { color: "bg-orange-100 text-orange-800", label: "Revisão" },
@@ -193,6 +200,7 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
 
   const statusOptions = [
     { value: "PENDING", label: "Pendente" },
+    { value: "PROCESSING", label: "Processando" },
     { value: "PREVIEW", label: "Preview" },
     { value: "APPROVED", label: "Aprovado" },
     { value: "REVISION", label: "Revisão" },
@@ -242,9 +250,9 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Coluna Principal */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Coluna de Informações */}
+        <div className="space-y-6">
           {/* Informações do Projeto */}
           <Card>
             <CardHeader>
@@ -373,46 +381,37 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
 
               <Separator />
 
-              {/* Reenvio para Webhook */}
+              {/* Processamento com IA */}
               <div className="space-y-3">
                 <div>
-                  <h4 className="font-medium">Geração do Site</h4>
+                  <h4 className="font-medium">Processamento com IA</h4>
                   <p className="text-sm text-muted-foreground">
-                    Reenvie os dados do projeto para o webhook gerar um novo site
+                    Processe o projeto com nossa IA integrada para gerar o site automaticamente
                   </p>
                 </div>
 
-                {project.status === 'APPROVED' ? (
-                  <Alert>
-                    <Icons.checkCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Projeto aprovado! Você pode reenviar os dados para geração do site.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Alert>
-                    <Icons.alertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Aprove o projeto primeiro para habilitar a geração do site.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <Alert>
+                  <Icons.zap className="h-4 w-4" />
+                  <AlertDescription>
+                    Como administrador, você pode processar este projeto com IA a qualquer momento, independentemente do status atual.
+                  </AlertDescription>
+                </Alert>
 
                 <Button
-                  onClick={sendToWebhook}
-                  disabled={isSendingWebhook || project.status !== 'APPROVED'}
-                  variant={project.status === 'APPROVED' ? 'default' : 'secondary'}
+                  onClick={processWithAI}
+                  disabled={isSendingWebhook}
+                  variant="default"
                   className="w-full"
                 >
                   {isSendingWebhook ? (
                     <>
                       <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando para Webhook...
+                      Processando com IA...
                     </>
                   ) : (
                     <>
-                      <Icons.send className="mr-2 h-4 w-4" />
-                      Reenviar para Geração do Site
+                      <Icons.zap className="mr-2 h-4 w-4" />
+                      Processar com IA
                     </>
                   )}
                 </Button>
@@ -491,6 +490,14 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Coluna de Preview */}
+        <div className="h-[calc(100vh-200px)]">
+          <PreviewPanel 
+            project={project} 
+            onRefresh={() => fetchProject(project.id)} 
+          />
         </div>
       </div>
     </div>

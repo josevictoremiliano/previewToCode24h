@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Icons } from "@/components/icons"
+import { PreviewPanel } from "@/components/admin/preview-panel"
 import Link from "next/link"
 import { toast } from "sonner"
 
@@ -229,9 +230,11 @@ export default function EditSitePage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Informações do Site */}
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Coluna de Informações */}
+        <div className="space-y-6">
+          {/* Informações do Site */}
+          <Card>
           <CardHeader>
             <CardTitle>Informações do Site</CardTitle>
             <CardDescription>
@@ -362,33 +365,49 @@ export default function EditSitePage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Contato */}
-      {(project.contactEmail || project.contactPhone) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações de Contato</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {project.contactEmail && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email</label>
-                  <p className="text-sm">{project.contactEmail}</p>
+          {/* Contato */}
+          {(project.contactEmail || project.contactPhone) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações de Contato</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {project.contactEmail && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Email</label>
+                      <p className="text-sm">{project.contactEmail}</p>
+                    </div>
+                  )}
+                  
+                  {project.contactPhone && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Telefone</label>
+                      <p className="text-sm">{project.contactPhone}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {project.contactPhone && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Telefone</label>
-                  <p className="text-sm">{project.contactPhone}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Coluna de Preview */}
+        <div className="h-[calc(100vh-200px)]">
+          <PreviewPanel 
+            project={{
+              id: project.id,
+              name: project.siteName,
+              data: project, // Passar todo o projeto como data 
+              status: project.status,
+              previewUrl: project.previewUrl,
+              publishUrl: project.finalUrl
+            }} 
+            onRefresh={() => window.location.reload()} 
+          />
+        </div>
+      </div>
     </div>
   )
 }

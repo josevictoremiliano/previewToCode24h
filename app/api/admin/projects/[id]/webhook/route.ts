@@ -27,12 +27,12 @@ async function handler(
 
     if (project.status !== 'APPROVED') {
       return Response.json(
-        { error: "Projeto deve estar aprovado para ser enviado ao webhook" },
+        { error: "Projeto deve estar aprovado para processamento externo" },
         { status: 400 }
       )
     }
 
-    // Preparar dados para o webhook
+    // Preparar dados para processamento externo
     const webhookData = {
       projectId: project.id,
       projectName: project.name,
@@ -45,8 +45,8 @@ async function handler(
       action: 'generate_site'
     }
 
-    // URL do webhook (pode ser configurável via variável de ambiente)
-    const webhookUrl = process.env.N8N_WEBHOOK_URL || process.env.SITE_GENERATOR_WEBHOOK_URL || 'https://api.exemplo.com/generate-site'
+    // URL para processamento externo (configurável via variável de ambiente)
+    const webhookUrl = process.env.SITE_GENERATOR_WEBHOOK_URL || 'https://api.exemplo.com/generate-site'
 
     console.log('Enviando para webhook:', {
       url: webhookUrl,

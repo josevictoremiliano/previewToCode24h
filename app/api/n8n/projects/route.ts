@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authenticateApiKey } from "@/lib/api-auth"
 
-// Endpoint para o n8n buscar dados de projetos
+// Endpoint para integrações externas buscarem dados de projetos
 export async function GET(request: NextRequest) {
   try {
     // Autenticar via API Key

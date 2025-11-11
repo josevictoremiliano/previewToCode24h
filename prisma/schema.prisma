@@ -107,6 +107,7 @@ model Project {
 
 enum ProjectStatus {
   PENDING
+  PROCESSING
   PREVIEW
   APPROVED
   REVISION

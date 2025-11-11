@@ -145,7 +145,7 @@ export default function CriarSitePage() {
     setIsSubmitting(true)
 
     try {
-      // Preparar payload para o webhook n8n
+      // Preparar dados do projeto
       const payload = {
         userId: session.user.id,
         projectId: `project_${Date.now()}`,

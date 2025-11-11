@@ -163,36 +163,31 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Enviar para webhook n8n
+    // Processar projeto com IA integrada
     try {
-      const webhookUrl = process.env.N8N_WEBHOOK_URL
-      if (webhookUrl) {
-        const webhookPayload = {
-          ...data,
-          projectId: project.id, // Usar o ID real do projeto
-          userInfo: {
-            id: session.user.id,
-            name: session.user.name,
-            email: session.user.email,
-          },
+      // Importar função de processamento (dynamic import para evitar problemas de build)
+      const { processProjectWithAI } = await import('@/lib/ai-processor')
+      
+      // Processar em background para não bloquear a resposta
+      processProjectWithAI(data, project.id).catch(error => {
+        console.error('Erro no processamento em background:', error)
+        // Erro já é tratado dentro da função processProjectWithAI
+      })
+      
+    } catch (processingError) {
+      console.error("Erro ao iniciar processamento:", processingError)
+      // Não falhar a requisição se o processamento falhar ao iniciar
+      
+      // Notificar que o processamento será manual
+      await prisma.notification.create({
+        data: {
+          userId: session.user.id,
+          projectId: project.id,
+          type: "PROJECT_MANUAL",
+          title: "Processamento será manual",
+          message: `O site "${data.basicInfo.siteName}" será processado manualmente pela nossa equipe.`,
         }
-
-        const webhookResponse = await fetch(webhookUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(webhookPayload),
-        })
-
-        if (!webhookResponse.ok) {
-          console.error("Erro no webhook n8n:", await webhookResponse.text())
-          // Não falhar a requisição se o webhook falhar
-        }
-      }
-    } catch (webhookError) {
-      console.error("Erro ao enviar para webhook:", webhookError)
-      // Não falhar a requisição se o webhook falhar
+      })
     }
 
     return NextResponse.json(

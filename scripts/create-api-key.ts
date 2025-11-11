@@ -24,7 +24,7 @@ async function main() {
 
   const apiKey = await prisma.apiKey.create({
     data: {
-      name: "n8n Integration",
+      name: "Sistema Integrado",
       key: hashedKey,
       keyPreview,
       userId: user.id,
@@ -39,7 +39,7 @@ async function main() {
   console.log(`✅ API Key criada: ${apiKey.name}`)
   console.log(`🔑 Key: ${rawKey}`)
   console.log(`📋 Preview: ${keyPreview}`)
-  console.log(`\n📖 Use esta chave no n8n:`)
+  console.log(`\n📖 Use esta chave para integrações:`)
   console.log(`   Header: X-API-Key: ${rawKey}`)
   console.log(`   Ou: Authorization: Bearer ${rawKey}`)
 }
