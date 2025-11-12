@@ -157,34 +157,57 @@ export async function processProjectWithAI(projectData: ProjectData, projectId: 
     const copyTemplate = await getPromptTemplate('copy_creation')
     
     const copyVariables = {
-      siteName: projectData.basicInfo.siteName,
-      siteType: projectData.basicInfo.siteType,
-      niche: projectData.basicInfo.niche || 'geral',
-      targetAudience: projectData.content.targetAudience || 'público geral',
-      products: projectData.content.products.join(', '),
-      description: projectData.content.description || '',
-      cta: projectData.content.cta || 'Entre em contato',
-      style: projectData.visualIdentity.style || 'moderno'
+      siteName: projectData.basicInfo?.siteName || '',
+      slogan: projectData.basicInfo?.slogan || '',
+      siteType: projectData.basicInfo?.siteType || '',
+      niche: projectData.basicInfo?.niche || 'geral',
+      targetAudience: projectData.content?.targetAudience || 'público geral',
+      description: projectData.content?.description || '',
+      products: Array.isArray(projectData.content?.products) ? projectData.content.products.join(', ') : '',
+      cta: projectData.content?.cta || 'Entre em contato',
+      sections: Array.isArray(projectData.content?.sections) ? projectData.content.sections.join(', ') : 'hero,sobre,contato',
+      style: projectData.visualIdentity?.style || 'moderno',
+      primaryColor: projectData.visualIdentity?.primaryColor || '#3B82F6',
+      secondaryColor: projectData.visualIdentity?.secondaryColor || '#1E40AF',
+      customTexts: projectData.additionalResources?.customTexts || '',
+      features: Array.isArray(projectData.additionalResources?.features) ? projectData.additionalResources.features.join(', ') : '',
+      // Adicionar informações de contato
+      email: projectData.contact?.email || '',
+      phone: projectData.contact?.phone || '',
+      address: projectData.contact?.address || '',
+      socialMedia: projectData.contact?.socialMedia ? JSON.stringify(projectData.contact.socialMedia) : ''
     }
     
     const copyPrompt = replaceVariables(copyTemplate.prompt, copyVariables)
     const generatedCopy = await generateContent(copyPrompt, aiConfig.id, projectId, userId, copyTemplate.id)
     
     // 2. Gerar HTML do site
-    const htmlTemplate = await getPromptTemplate('html_generation')
+    const htmlTemplate = await getPromptTemplate('html_creation')
     
     const htmlVariables = {
-      siteName: projectData.basicInfo.siteName,
-      slogan: projectData.basicInfo.slogan || '',
-      primaryColor: projectData.visualIdentity.primaryColor,
-      secondaryColor: projectData.visualIdentity.secondaryColor,
-      email: projectData.contact.email,
-      phone: projectData.contact.phone || '',
-      address: projectData.contact.address || '',
-      instagram: projectData.contact.socialMedia.instagram || '',
-      facebook: projectData.contact.socialMedia.facebook || '',
-      whatsapp: projectData.contact.socialMedia.whatsapp || '',
-      generatedContent: generatedCopy
+      siteName: projectData.basicInfo?.siteName || '',
+      businessType: projectData.basicInfo?.siteType || '',
+      description: projectData.content?.description || '',
+      targetAudience: projectData.content?.targetAudience || '',
+      mainServices: Array.isArray(projectData.content?.products) ? projectData.content.products.join(', ') : '',
+      contactInfo: projectData.contact?.email || '',
+      brandColors: `${projectData.visualIdentity?.primaryColor || '#3B82F6'}, ${projectData.visualIdentity?.secondaryColor || '#1E40AF'}`,
+      style: projectData.visualIdentity?.style || 'moderno',
+      additionalRequirements: projectData.additionalResources?.customTexts || '',
+      slogan: projectData.basicInfo?.slogan || '',
+      siteType: projectData.basicInfo?.siteType || '',
+      niche: projectData.basicInfo?.niche || '',
+      products: Array.isArray(projectData.content?.products) ? projectData.content.products.join(', ') : '',
+      cta: projectData.content?.cta || 'Entre em contato',
+      sections: Array.isArray(projectData.content?.sections) ? projectData.content.sections.join(', ') : '',
+      primaryColor: projectData.visualIdentity?.primaryColor || '#3B82F6',
+      secondaryColor: projectData.visualIdentity?.secondaryColor || '#1E40AF',
+      customTexts: projectData.additionalResources?.customTexts || '',
+      features: Array.isArray(projectData.additionalResources?.features) ? projectData.additionalResources.features.join(', ') : '',
+      email: projectData.contact?.email || '',
+      phone: projectData.contact?.phone || '',
+      address: projectData.contact?.address || '',
+      socialMedia: projectData.contact?.socialMedia ? JSON.stringify(projectData.contact.socialMedia) : ''
     }
     
     const htmlPrompt = replaceVariables(htmlTemplate.prompt, htmlVariables)

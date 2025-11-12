@@ -8,16 +8,108 @@ const DEFAULT_PROMPTS = {
   "copy_creation": {
     name: "Criação de copy",
     category: "copywriting",
-    description: "Gera conteúdo completo para landing pages",
-    prompt: "Você é um copywriter especialista em criar conteúdo para landing pages.\nCom base nos dados fornecidos abaixo, crie um conteúdo completo e profissional para um site/landing page.\n\n**Dados do Cliente:**\n- Nome: {{ nomeSite }}\n- Email: {{ email }}\n- Público-Alvo: {{ publicoAlvo }}\n- Serviços/Produtos: {{ servicos }}\n- Tom de Voz: {{ tomDeVoz }}\n- Cores: {{ cores }}\n- Descrição: {{ descricao }}\n\nGere um JSON estruturado com:\n1. titulo_principal (chamativo)\n2. subtitulo (complemento)\n3. secao_sobre (texto de apresentação)\n4. servicos (array com título e descrição de cada serviço/produto)\n5. secao_cta (call to action)\n6. secao_contato (texto de convite para contato)\n\nRetorne apenas o JSON, sem explicações.",
-    variables: ["nomeSite", "email", "publicoAlvo", "servicos", "tomDeVoz", "cores", "descricao"]
+    description: "Gera conteúdo completo para landing pages baseado nas seções escolhidas pelo cliente",
+    prompt: `Você é um copywriter especialista em criar conteúdo para landing pages.
+
+**IMPORTANTE**: Crie conteúdo APENAS para as seções que o cliente solicitou. Não adicione seções extras.
+
+**Dados do Cliente:**
+- Nome do Site: {{ siteName }}
+- Slogan: {{ slogan }}
+- Tipo de Site: {{ siteType }}
+- Nicho: {{ niche }}
+- Público-Alvo: {{ targetAudience }}
+- Descrição: {{ description }}
+- Produtos/Serviços: {{ products }}
+- CTA Principal: {{ cta }}
+- Seções Solicitadas: {{ sections }}
+- Estilo: {{ style }}
+- Cor Primária: {{ primaryColor }}
+- Cor Secundária: {{ secondaryColor }}
+- Textos Personalizados: {{ customTexts }}
+- Funcionalidades: {{ features }}
+
+**SEÇÕES DISPONÍVEIS E SEUS CONTEÚDOS:**
+- hero: Título principal, subtítulo, CTA principal, imagem de destaque
+- sobre/about: Apresentação da empresa, missão, valores
+- beneficios: Principais benefícios e vantagens
+- servicos: Lista de serviços/produtos oferecidos
+- depoimentos: Testimoniais de clientes (se solicitado)
+- como-funciona: Passo a passo do processo
+- precos: Tabela de preços (se solicitado)
+- contato: Informações de contato e formulário
+- galeria: Portfólio ou galeria de trabalhos
+- faq: Perguntas frequentes
+- credibilidade: Certificações, prêmios, números
+
+**INSTRUÇÃO**: Gere um JSON estruturado contendo APENAS as seções listadas em "{{ sections }}". 
+
+Para cada seção solicitada, inclua:
+- titulo: Título da seção
+- conteudo: Texto principal
+- cta_texto: Texto do botão (se aplicável)
+- elementos: Array com elementos específicos da seção
+
+Retorne apenas o JSON, sem explicações adicionais.`,
+    variables: ["siteName", "slogan", "siteType", "niche", "targetAudience", "description", "products", "cta", "sections", "style", "primaryColor", "secondaryColor", "customTexts", "features"]
   },
   "html_creation": {
     name: "Criação de HTML",
-    category: "development",
+    category: "development", 
     description: "Gera código HTML completo para landing pages",
-    prompt: "Você é um desenvolvedor web especialista em criar landing pages em HTML, CSS e JavaScript vanilla.\n\nCom base no conteúdo JSON gerado pela IA anterior, crie uma landing page COMPLETA e MODERNA:\n\n**Conteúdo (JSON):**\n{{ jsonCopy }}\n\n**Requisitos técnicos:**\n1. HTML5 semântico e bem estruturado\n2. CSS incorporado no <style> com design moderno, gradientes, responsivo (mobile-first)\n3. JavaScript vanilla incorporado no <script> com animações e interações suaves\n4. Cores principais: {{ cores }}\n5. Design flutuante/moderno\n6. Botão WhatsApp flutuante\n7. Cores modernas e agradáveis\n\nRetorne APENAS o código HTML completo, pronto para salvar em arquivo .html",
-    variables: ["jsonCopy", "cores"]
+    prompt: `Crie um site HTML completo e responsivo baseado nas seguintes informações:
+
+**Nome do Site:** {{siteName}}
+**Tipo de Negócio:** {{businessType}}
+**Descrição:** {{description}}
+**Público-Alvo:** {{targetAudience}}
+**Principais Serviços:** {{mainServices}}
+**Informações de Contato:** {{contactInfo}}
+**Cores da Marca:** {{brandColors}}
+**Estilo Desejado:** {{style}}
+**Requisitos Adicionais:** {{additionalRequirements}}
+
+**Dados do Cliente:**
+- Nome do Site: {{siteName}}
+- Slogan: {{slogan}}
+- Tipo: {{siteType}}
+- Nicho: {{niche}}
+- Público-alvo: {{targetAudience}}
+- Descrição: {{description}}
+- Produtos/Serviços: {{products}}
+- CTA Principal: {{cta}}
+- Seções solicitadas: {{sections}}
+- Estilo visual: {{style}}
+- Cor primária: {{primaryColor}}
+- Cor secundária: {{secondaryColor}}
+- Textos personalizados: {{customTexts}}
+- Features especiais: {{features}}
+
+**INFORMAÇÕES DE CONTATO:**
+- Email: {{email}}
+- Telefone: {{phone}}
+- Endereço: {{address}}
+- Redes Sociais: {{socialMedia}}
+
+INSTRUÇÕES:
+1. Crie um HTML completo com DOCTYPE, head e body
+2. Inclua CSS interno responsivo e moderno
+3. Use as cores da marca fornecidas (primaryColor e secondaryColor)
+4. Inclua seções: header, hero, sobre, serviços, contato, footer
+5. Torne o design responsivo para mobile, tablet e desktop
+6. Use JavaScript vanilla se necessário para interações básicas
+7. Inclua meta tags para SEO
+8. Use fontes web (Google Fonts)
+9. Otimize para performance e acessibilidade
+10. O resultado deve ser um arquivo HTML único e completo
+11. As imagens devem ser otimizadas e ter tamanho fixo para não transbordar
+12. Use ícones do Phosphor Icons: <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" /> <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css"/>
+13. Garanta que as cores primária e secundária sejam aplicadas consistentemente
+14. Imagens devem ter width e height fixos no CSS
+15. Use a paleta de cores fornecida em gradientes e elementos visuais
+
+Retorne APENAS o código HTML completo, sem explicações adicionais.`,
+    variables: ["siteName", "businessType", "description", "targetAudience", "mainServices", "contactInfo", "brandColors", "style", "additionalRequirements", "slogan", "siteType", "niche", "products", "cta", "sections", "primaryColor", "secondaryColor", "customTexts", "features", "email", "phone", "address", "socialMedia"]
   }
 }
 

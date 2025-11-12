@@ -41,7 +41,8 @@ export async function GET(
       createdAt: project.createdAt.toISOString(),
       user: project.user,
       
-      // Dados para o preview
+      // Dados para o preview - incluir htmlContent da raiz
+      htmlContent: project.htmlContent,
       generatedContent: projectData?.generatedContent || null,
       data: projectData
     }

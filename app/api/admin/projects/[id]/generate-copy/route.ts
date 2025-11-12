@@ -38,15 +38,15 @@ export async function POST(
     // Copy estruturada seguindo o padrão da imagem de referência
     const mockCopy = `
 # HERO_SECTION
-## headline: Aumente seu faturamento e conquiste mais clientes
-## subheadline: com ${project.briefing?.businessType || 'tráfego'} que realmente funciona!
-## description: ${project.briefing?.description || 'Chega de gastar dinheiro com marketing que não dá resultado. Nossa metodologia comprovada já ajudou centenas de empresas a triplicar seu faturamento em menos de 90 dias.'}
-## cta_text: QUERO AUMENTAR MINHAS VENDAS
+## headline: ${project.data?.basicInfo?.siteName || 'Aumente seu faturamento e conquiste mais clientes'}
+## subheadline: ${project.data?.content?.description || `com ${project.data?.basicInfo?.niche || 'tráfego'} que realmente funciona!`}
+## description: ${project.data?.content?.description || 'Chega de gastar dinheiro com marketing que não dá resultado. Nossa metodologia comprovada já ajudou centenas de empresas a triplicar seu faturamento em menos de 90 dias.'}
+## cta_text: ${project.data?.content?.cta || 'QUERO AUMENTAR MINHAS VENDAS'}
 ## hero_image: ${project.data?.additionalResources?.images?.[0] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[0]}]` : '[IMAGEM: Profissional confiante com resultados visíveis]'}
 
 # SOCIAL_PROOF_SECTION  
 ## testimonial_quote: "Cansei de perder tempo e dinheiro com tráfego que não funciona!"
-## testimonial_author: ${project.briefing?.targetAudience || 'Empresário do setor'}
+## testimonial_author: ${project.data?.content?.targetAudience || 'Empresário do setor'}
 ## testimonial_description: Esta é a realidade de 9 em cada 10 empresários que já tentaram fazer marketing digital e não tiveram os resultados esperados. Se você também se identifica com esta situação, continue lendo.
 
 # PROBLEM_SECTION
@@ -59,7 +59,7 @@ export async function POST(
 
 # SERVICES_SECTION
 ## title: Nossos Serviços
-## services_list: ${project.briefing?.mainServices || 'Estratégias de marketing digital, Gestão de tráfego pago, Otimização de conversões, Automação de vendas'}
+## services_list: ${project.data?.content?.products ? project.data.content.products.join(', ') : 'Estratégias de marketing digital, Gestão de tráfego pago, Otimização de conversões, Automação de vendas'}
 ## service_1:
 ### title: Diagnóstico
 ### description: Análise completa do seu negócio para identificar oportunidades de crescimento
@@ -76,8 +76,8 @@ export async function POST(
 ### icon: [ÍCONE: Engrenagem/Execução]
 
 # ABOUT_SECTION
-## title: Prazer, sou ${project.briefing?.siteName || 'Wagner César'}
-## description: Nos últimos anos ajudei centenas de empresários a transformarem seus negócios através do marketing digital. Minha missão é fazer com que você também tenha acesso a metodologia que já gerou milhões em faturamento para meus clientes.
+## title: Prazer, somos ${project.data?.basicInfo?.siteName || 'Wagner César'}
+## description: ${project.data?.content?.description || 'Nos últimos anos ajudei centenas de empresários a transformarem seus negócios através do marketing digital. Minha missão é fazer com que você também tenha acesso a metodologia que já gerou milhões em faturamento para meus clientes.'}
 ## about_image: ${project.data?.additionalResources?.images?.[1] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[1]}]` : '[IMAGEM: Equipe profissional ou especialista principal]'}
 
 # STRATEGY_SECTION
@@ -101,14 +101,27 @@ export async function POST(
 
 # CREDIBILITY_SECTION
 ## title: Se você acredita que seu marketing pode fazer mais, você está certo.
-## description: ${project.briefing?.description || 'Através de estratégias comprovadas e metodologia testada, já transformei centenas de negócios. Agora é a sua vez de fazer parte desse seleto grupo de empresários que descobriram como vender mais através do marketing digital.'}
+## description: ${project.data?.content?.description || 'Através de estratégias comprovadas e metodologia testada, já transformei centenas de negócios. Agora é a sua vez de fazer parte desse seleto grupo de empresários que descobriram como vender mais através do marketing digital.'}
 ## credibility_image: ${project.data?.additionalResources?.images?.[2] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[2]}]` : '[IMAGEM: Ambiente profissional inspirador]'}
 
 # CTA_SECTION
 ## title: Marque uma sessão estratégica gratuita agora!
 ## description: Na chamada vamos analisar o seu negócio e mostrar como você pode aumentar seu faturamento nos próximos 90 dias.
-## cta_text: QUERO AGENDAR MINHA SESSÃO
+## cta_text: ${project.data?.content?.cta || 'QUERO AGENDAR MINHA SESSÃO'}
 ## form_fields: Nome, E-mail, Telefone, Empresa
+
+${project.data?.additionalResources?.customTexts?.includes('97,99') ? `
+# PRICING_SECTION
+## title: Nossos Planos
+## plan_basic:
+### name: Plano Básico
+### price: R$ 97,99
+### features: Design profissional, Entrega em 48h, 1 revisão inclusa, Suporte básico
+## plan_pro:
+### name: Plano Pro  
+### price: R$ 150,99
+### features: Design premium, Entrega em 24h, 3 revisões inclusas, Suporte prioritário, Formatos extras
+` : ''}
 
 # FAQ_SECTION
 ## title: Perguntas Frequentes
@@ -120,10 +133,10 @@ export async function POST(
 ### faq_5: É só para empresas grandes?
 
 # CONTACT_INFO
-## email: ${project.briefing?.contactInfo || 'contato@empresa.com'}
-## phone: ${project.briefing?.contactInfo || '(11) 99999-9999'}  
-## address: São Paulo, Brasil
-## social_media: Instagram, Facebook, LinkedIn
+## email: ${project.data?.contact?.email || 'contato@empresa.com'}
+## phone: ${project.data?.contact?.phone || '(11) 99999-9999'}  
+## address: ${project.data?.contact?.address || 'São Paulo, Brasil'}
+## social_media: ${project.data?.contact?.socialMedia ? Object.entries(project.data.contact.socialMedia).filter(([, value]) => value && value.trim()).map(([socialType, socialValue]) => `${socialType}: ${socialValue}`).join(', ') : 'Instagram, Facebook, LinkedIn'}
     `
 
     // Atualizar projeto com a copy gerada

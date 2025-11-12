@@ -20,7 +20,7 @@ async function generateHTMLWithAI(projectData: any): Promise<string> {
     // Buscar template de prompt para geração de HTML
     const promptTemplate = await prisma.promptTemplate.findFirst({
       where: { 
-        key: 'html_generation',
+        key: 'html_creation',
         isActive: true 
       }
     });

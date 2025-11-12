@@ -16,6 +16,7 @@ interface PreviewPanelProps {
     status: string
     previewUrl?: string
     publishUrl?: string
+    htmlContent?: string
   }
   onRefresh?: () => void
 }
@@ -24,11 +25,36 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedDevice, setSelectedDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   
-  // Extrair HTML gerado da IA do campo data
-  const generatedHtml = project.data?.generatedContent?.html || 
+  // Usar o campo htmlContent diretamente do projeto
+  const generatedHtml = project.htmlContent || 
+                       project.data?.generatedContent?.html || 
                        project.data?.generatedHtml || 
                        project.data?.htmlContent || 
                        ''
+
+  // Auto refresh quando o status indica que HTML pode estar disponível
+  useEffect(() => {
+    if (project.status.includes('HTML') && !generatedHtml && onRefresh) {
+      const timer = setTimeout(() => {
+        console.log('Auto-refreshing devido ao status HTML sem conteúdo')
+        onRefresh()
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [project.status, generatedHtml, onRefresh])
+
+  // Debug: Log do conteúdo HTML
+  useEffect(() => {
+    console.log('PreviewPanel Debug:', {
+      projectId: project.id,
+      status: project.status,
+      htmlContentExists: !!project.htmlContent,
+      htmlContentLength: project.htmlContent?.length || 0,
+      dataExists: !!project.data,
+      generatedHtmlExists: !!generatedHtml,
+      generatedHtmlLength: generatedHtml?.length || 0
+    })
+  }, [project, generatedHtml])
   
   const deviceSizes = {
     desktop: 'w-full',
@@ -72,6 +98,9 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
           <CardTitle className="flex items-center gap-2">
             <Icons.monitor className="h-5 w-5" />
             Preview do Site
+            <Badge variant="outline" className="text-xs">
+              {project.status}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
@@ -82,8 +111,13 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
               <p className="text-muted-foreground">
                 {project.status === 'PROCESSING' ? 
                   'Site sendo processado pela IA...' : 
+                  project.status.includes('HTML') ?
+                  'HTML gerado, mas não encontrado' :
                   'Execute o processamento de IA para gerar o preview'
                 }
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Debug: ID={project.id}, Status={project.status}
               </p>
             </div>
             {onRefresh && (
@@ -192,27 +226,14 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
                   srcDoc={generatedHtml}
                   className="w-full h-full border-0"
                   title="Preview do Site"
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
                 />
-              ) : project.previewUrl ? (
-                <iframe
-                  src={project.previewUrl}
-                  className="w-full h-full border-0"
-                  title="Preview do Site"
-                />
-              ) : project.id ? (
+              ) : (
                 <iframe
                   src={`/api/preview/${project.id}`}
                   className="w-full h-full border-0"
                   title="Preview do Site"
                 />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <Icons.loader className="h-8 w-8 animate-spin mx-auto mb-2" />
-                    <p>Carregando preview...</p>
-                  </div>
-                </div>
               )}
             </div>
           </div>
