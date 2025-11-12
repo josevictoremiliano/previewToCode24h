@@ -17,7 +17,7 @@ export async function POST(request) {
       [siteId, html_content, client_email, client_name || '', 'pending']
     );
 
-    const previewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/preview/${siteId}`;
+    const previewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/preview-page/${siteId}`;
     return Response.json({ success: true, site_id: siteId, preview_url: previewUrl });
   } catch (error) {
     console.error('Error:', error);

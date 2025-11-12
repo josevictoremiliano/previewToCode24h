@@ -71,7 +71,8 @@ export async function POST(
         message: `O projeto "${project.name}" foi cancelado com sucesso.`,
         userId: project.userId,
         projectId: projectId,
-        type: "INFO"
+        type: "INFO",
+        read: false
       }
     })
 

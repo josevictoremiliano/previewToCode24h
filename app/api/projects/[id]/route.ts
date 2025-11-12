@@ -35,36 +35,36 @@ export async function GET(
     }
 
     // Extrair dados do campo JSON e mapear para formato esperado
-    const projectData = project.data || {}
+    const projectData = project.data as any || {}
     
     const mappedProject = {
       id: project.id,
-      siteName: projectData.siteName || project.name,
+      siteName: projectData.basicInfo?.siteName || projectData.siteName || project.name,
       name: project.name,
-      slogan: projectData.slogan,
+      slogan: projectData.basicInfo?.slogan || projectData.slogan,
       status: project.status,
       createdAt: project.createdAt.toISOString(),
-      siteType: projectData.siteType,
-      niche: projectData.niche,
-      primaryColor: projectData.primaryColor,
-      secondaryColor: projectData.secondaryColor,
-      contactEmail: projectData.contactEmail,
-      contactPhone: projectData.contactPhone,
-      description: projectData.description,
+      siteType: projectData.basicInfo?.siteType || projectData.siteType,
+      niche: projectData.basicInfo?.niche || projectData.niche,
+      primaryColor: projectData.visualIdentity?.primaryColor || projectData.primaryColor,
+      secondaryColor: projectData.visualIdentity?.secondaryColor || projectData.secondaryColor,
+      contactEmail: projectData.contact?.email || projectData.contactEmail,
+      contactPhone: projectData.contact?.phone || projectData.contactPhone,
+      description: projectData.content?.description || projectData.description,
       previewUrl: project.previewUrl,
       publishUrl: project.publishUrl,
-      logoUrl: projectData.logoUrl,
-      style: projectData.style,
-      referenceUrls: projectData.referenceUrls,
-      targetAudience: projectData.targetAudience,
-      products: projectData.products,
-      cta: projectData.cta,
-      sections: projectData.sections,
-      contactAddress: projectData.contactAddress,
-      socialMedia: projectData.socialMedia,
-      images: projectData.images,
-      customTexts: projectData.customTexts,
-      features: projectData.features,
+      logoUrl: projectData.visualIdentity?.logoUrl || projectData.logoUrl,
+      style: projectData.visualIdentity?.style || projectData.style,
+      referenceUrls: projectData.visualIdentity?.referenceUrls || projectData.referenceUrls,
+      targetAudience: projectData.content?.targetAudience || projectData.targetAudience,
+      products: projectData.content?.products || projectData.products,
+      cta: projectData.content?.cta || projectData.cta,
+      sections: projectData.content?.sections || projectData.sections,
+      contactAddress: projectData.contact?.address || projectData.contactAddress,
+      socialMedia: projectData.contact?.socialMedia || projectData.socialMedia,
+      images: projectData.additionalResources?.images || projectData.images || [],
+      customTexts: projectData.additionalResources?.customTexts || projectData.customTexts,
+      features: projectData.additionalResources?.features || projectData.features,
       // Incluir todos os dados originais para compatibilidade
       data: project.data
     }

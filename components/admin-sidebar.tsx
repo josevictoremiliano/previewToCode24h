@@ -14,7 +14,7 @@ interface AdminSidebarProps {
 const adminSidebarItems = [
   {
     title: "Dashboard",
-    href: "/admin/dashboard",
+    href: "/admin",
     icon: Icons.barChart,
   },
   {
@@ -42,6 +42,12 @@ const adminSidebarItems = [
     title: "Relatórios",
     href: "/admin/reports",
     icon: Icons.fileText,
+  },
+  {
+    title: "Config. Sistema",
+    href: "/admin/system-config",
+    icon: Icons.settings,
+    badge: "Novo",
   },
   {
     title: "Configurações",

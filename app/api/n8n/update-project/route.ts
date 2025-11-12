@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
         type: notificationData.type,
         title: notificationData.title,
         message: notificationData.message,
+        read: false
       },
     })
 

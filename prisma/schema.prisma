@@ -37,6 +37,8 @@ model User {
   aiConfigs        AiConfig[]
   promptTemplates  PromptTemplate[]
   aiUsageLogs      AiUsageLog[]
+  systemConfigs    SystemConfig[]
+  projectLogs      ProjectLog[]
 
   @@map("users")
 }
@@ -93,6 +95,13 @@ model Project {
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignedAdminId String?
   assignedAdmin   User?     @relation("AdminAssignments", fields: [assignedAdminId], references: [id])
+  
+  // Novos campos para workflow de copy e HTML
+  copy         String?      @db.Text // Copy gerada pela IA
+  copyFeedback String?      @db.Text // Feedback para revisão da copy
+  htmlContent  String?      @db.Text // HTML gerado
+  htmlFeedback String?      @db.Text // Feedback para revisão do HTML
+  
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   cancelledAt DateTime?
@@ -101,19 +110,47 @@ model Project {
   notifications Notification[]
   chatMessages  ChatMessage[]
   aiUsageLogs   AiUsageLog[]
+  briefing      Briefing?
+  projectLogs   ProjectLog[]
 
   @@map("projects")
 }
 
+// Modelo para briefing estruturado
+model Briefing {
+  id                    String   @id @default(cuid())
+  projectId             String   @unique
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  siteName              String
+  businessType          String
+  description           String   @db.Text
+  targetAudience        String
+  mainServices          String   @db.Text
+  contactInfo           String   @db.Text
+  brandColors           String
+  style                 String
+  additionalRequirements String? @db.Text
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("briefings")
+}
+
 enum ProjectStatus {
-  PENDING
-  PROCESSING
-  PREVIEW
-  APPROVED
-  REVISION
-  COMPLETED
-  PUBLISHED
-  CANCELLED
+  PENDING        // Aguardando aprovação do admin
+  PROCESSING     // Sendo processado pela IA
+  COPY_READY     // Copy foi gerada e aprovada
+  COPY_REVISION  // Copy precisa de revisão
+  HTML_READY     // HTML foi gerado e aprovado pelo admin
+  HTML_REVISION  // HTML precisa de revisão
+  PREVIEW        // Aguardando aprovação do cliente
+  APPROVED       // Aprovado pelo cliente
+  REVISION       // Cliente solicitou revisão
+  COMPLETED      // Finalizado
+  PUBLISHED      // Publicado
+  CANCELLED      // Cancelado
 }
 
 // Modelo de notificações
@@ -225,4 +262,36 @@ model AiUsageLog {
   user          User     @relation(fields: [userId], references: [id])
 
   @@map("ai_usage_logs")
+}
+
+// Modelo para logs de ações no projeto
+model ProjectLog {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String   // Tipo de ação: 'COPY_GENERATED', 'COPY_EDITED', 'HTML_GENERATED', etc
+  description String   // Descrição detalhada da ação
+  metadata    Json?    // Dados adicionais sobre a ação
+  createdAt   DateTime @default(now())
+
+  @@map("project_logs")
+}
+
+// Modelo para configurações do sistema
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique // Chave única (ex: "minio_endpoint", "smtp_host")
+  value       String?  // Valor da configuração (criptografado se necessário)
+  encrypted   Boolean  @default(false) // Se o valor está criptografado
+  category    String   @default("general") // Categoria (minio, smtp, ai, general)
+  description String?  // Descrição da configuração
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@map("system_configs")
 }

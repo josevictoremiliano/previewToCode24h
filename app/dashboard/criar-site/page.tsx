@@ -55,9 +55,13 @@ export interface FormData {
       whatsapp: string
     }
   }
-  // Passo 5 - Recursos Adicionais
+  // Passo 5 - Recursos Adicionais  
   additionalResources: {
-    images: File[]
+    images: {
+      file: File
+      position: 'hero' | 'about' | 'credibility' | 'gallery' | 'unassigned'
+      id: string
+    }[]
     customTexts: string
     features: string[]
   }
@@ -145,10 +149,76 @@ export default function CriarSitePage() {
     setIsSubmitting(true)
 
     try {
-      // Preparar dados do projeto
+      const projectId = `project_${Date.now()}`
+      let processedImages = []
+
+      // 1. Processar imagens se houver
+      if (formData.additionalResources.images.length > 0) {
+        console.log('📸 Processando', formData.additionalResources.images.length, 'imagens...')
+        
+        try {
+          toast.loading("Enviando imagens para MinIO...")
+          
+          // Converter Files para base64
+          const imageBase64Promises = formData.additionalResources.images.map(async (img) => {
+            return new Promise<string>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result as string)
+              reader.onerror = () => reject(new Error(`Erro ao ler ${img.file.name}`))
+              reader.readAsDataURL(img.file)
+            })
+          })
+          
+          const imagesBase64 = await Promise.all(imageBase64Promises)
+          console.log('✅ Imagens convertidas para base64')
+          
+          // Upload para MinIO
+          const uploadResponse = await fetch("/api/upload-images", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              images: imagesBase64,
+              projectId: projectId
+            })
+          })
+          
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text()
+            console.error('❌ Erro no upload:', errorText)
+            throw new Error(`Erro ao fazer upload das imagens: ${uploadResponse.status}`)
+          }
+          
+          const uploadResult = await uploadResponse.json()
+          console.log('✅ Upload concluído:', uploadResult)
+          
+          // Mapear URLs das imagens enviadas
+          processedImages = formData.additionalResources.images.map((img, index) => {
+            const uploadedImage = uploadResult.successful.find((success: any) => success.index === index)
+            return {
+              url: uploadedImage?.url || '',
+              position: img.position,
+              id: img.id,
+              filename: img.file.name
+            }
+          })
+          
+          toast.dismiss()
+          toast.success(`${uploadResult.successful.length} imagens enviadas para MinIO!`)
+          
+        } catch (imageError) {
+          console.error('❌ Erro no processamento de imagens:', imageError)
+          toast.dismiss()
+          toast.error(`Erro no upload de imagens: ${imageError.message}`)
+          throw imageError // Re-throw para parar a criação do projeto
+        }
+      } else {
+        console.log('📸 Nenhuma imagem para processar')
+      }
+
+      // 2. Preparar dados do projeto
       const payload = {
         userId: session.user.id,
-        projectId: `project_${Date.now()}`,
+        projectId: projectId,
         basicInfo: formData.basicInfo,
         visualIdentity: {
           logoUrl: formData.visualIdentity.logoUrl,
@@ -160,7 +230,7 @@ export default function CriarSitePage() {
         content: formData.content,
         contact: formData.contact,
         additionalResources: {
-          images: [], // URLs das imagens após upload
+          images: processedImages,
           customTexts: formData.additionalResources.customTexts,
           features: formData.additionalResources.features
         },
@@ -177,7 +247,10 @@ export default function CriarSitePage() {
       })
 
       if (!response.ok) {
-        throw new Error("Erro ao criar projeto")
+        const errorData = await response.text()
+        console.error('Erro na API de projetos:', errorData)
+        console.error('Status:', response.status)
+        throw new Error(`Erro ao criar projeto: ${response.status}`)
       }
 
       await response.json()

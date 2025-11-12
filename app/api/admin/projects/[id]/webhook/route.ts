@@ -120,7 +120,8 @@ async function handler(
             message: `Seu projeto "${project.name}" foi enviado para geração e o site está sendo criado. Você receberá uma notificação quando estiver pronto.`,
             userId: project.userId,
             projectId,
-            type: "success"
+            type: "success",
+            read: false
           }
         })
 
@@ -147,7 +148,8 @@ async function handler(
             message: `Houve um problema ao gerar o site para o projeto "${project.name}". Nossa equipe foi notificada e irá resolver o problema.`,
             userId: project.userId,
             projectId,
-            type: "error"
+            type: "error",
+            read: false
           }
         })
 
@@ -173,7 +175,8 @@ async function handler(
             message: `O processo de geração do site para o projeto "${project.name}" está demorando mais que o esperado. Aguarde alguns minutos e tente novamente.`,
             userId: project.userId,
             projectId,
-            type: "warning"
+            type: "warning",
+            read: false
           }
         })
 

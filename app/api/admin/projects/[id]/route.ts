@@ -38,6 +38,33 @@ export async function GET(
             name: true,
             email: true
           }
+        },
+        briefing: true,
+        notifications: {
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 10,
+          select: {
+            id: true,
+            type: true,
+            message: true,
+            read: true,
+            createdAt: true
+          }
+        },
+        projectLogs: {
+          orderBy: {
+            createdAt: 'desc'
+          },
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true
+              }
+            }
+          }
         }
       }
     })

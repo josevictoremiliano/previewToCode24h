@@ -7,11 +7,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { Icons } from "@/components/icons"
 import { toast } from "sonner"
 
+interface ImageWithPosition {
+  file: File
+  position: 'hero' | 'about' | 'credibility' | 'gallery' | 'logo' | 'favicon' | 'unassigned'
+  id: string
+}
+
 interface AdditionalResources {
-  images: File[]
+  images: ImageWithPosition[]
   customTexts: string
   features: string[]
 }
@@ -34,10 +42,20 @@ const availableFeatures = [
   { id: "progress-bar", label: "Barra de Progresso", description: "Passos do processo de compra" },
 ]
 
+const imagePositions = [
+  { value: "logo", label: "🏷️ Logo", description: "Logo da empresa (formato recomendado: PNG transparente)" },
+  { value: "favicon", label: "🔖 Favicon", description: "Ícone do site (formato recomendado: 32x32px)" },
+  { value: "hero", label: "🚀 Hero Principal", description: "Imagem de destaque na primeira seção" },
+  { value: "about", label: "👥 Sobre Nós", description: "Foto da equipe ou empresa" },
+  { value: "credibility", label: "🏆 Credibilidade", description: "Ambiente profissional ou certificações" },
+  { value: "gallery", label: "🖼️ Galeria", description: "Produtos, resultados ou portfólio" },
+  { value: "unassigned", label: "📋 Não Definido", description: "Disponível para uso geral" }
+]
+
 export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props) {
   const [formData, setFormData] = useState<AdditionalResources>(data)
 
-  const handleChange = (field: keyof AdditionalResources, value: string | File[] | string[]) => {
+  const handleChange = (field: keyof AdditionalResources, value: string | ImageWithPosition[] | string[]) => {
     const newData = { ...formData, [field]: value }
     setFormData(newData)
     onUpdate(newData)
@@ -60,11 +78,32 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
       return
     }
 
-    handleChange("images", [...formData.images, ...files])
+    // Converter Files para ImageWithPosition
+    const newImages: ImageWithPosition[] = files.map((file, index) => ({
+      file,
+      position: 'unassigned',
+      id: `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`
+    }))
+
+    handleChange("images", [...formData.images, ...newImages])
   }
 
-  const removeImage = (index: number) => {
-    const images = formData.images.filter((_, i) => i !== index)
+  const removeImage = (id: string) => {
+    const images = formData.images.filter(img => img.id !== id)
+    handleChange("images", images)
+  }
+
+  const updateImagePosition = (id: string, position: ImageWithPosition['position']) => {
+    const images = formData.images.map(img => 
+      img.id === id ? { ...img, position } : img
+    )
+    handleChange("images", images)
+  }
+
+  const replaceImage = (id: string, newFile: File) => {
+    const images = formData.images.map(img => 
+      img.id === id ? { ...img, file: newFile } : img
+    )
     handleChange("images", images)
   }
 
@@ -125,31 +164,142 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
             </div>
 
             {formData.images.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {formData.images.map((file, index) => (
-                  <div key={index} className="relative">
-                    <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Icons.info className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Defina onde cada imagem deve aparecer no site. Você pode alterar, remover ou trocar as imagens.
+                  </p>
+                </div>
+                
+                <div className="grid gap-4">
+                  {formData.images.map((imageWithPos) => (
+                    <div key={imageWithPos.id} className="flex gap-4 p-4 border rounded-lg bg-card">
+                      {/* Preview da Imagem */}
+                      <div className="relative">
+                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                          <img
+                            src={URL.createObjectURL(imageWithPos.file)}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        
+                        {/* Botão de trocar imagem */}
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full p-0"
+                          onClick={() => {
+                            const input = document.createElement('input')
+                            input.type = 'file'
+                            input.accept = 'image/*'
+                            input.onchange = (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0]
+                              if (file) {
+                                replaceImage(imageWithPos.id, file)
+                                toast.success("Imagem substituída!")
+                              }
+                            }
+                            input.click()
+                          }}
+                        >
+                          <Icons.edit className="h-3 w-3" />
+                        </Button>
+                      </div>
+
+                      {/* Informações e Controles */}
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-medium truncate">{imageWithPos.file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {Math.round(imageWithPos.file.size / 1024)} KB
+                            </p>
+                          </div>
+                          
+                          {/* Badge da Posição */}
+                          <Badge variant={imageWithPos.position === 'unassigned' ? 'secondary' : 'default'}>
+                            {imagePositions.find(p => p.value === imageWithPos.position)?.label}
+                          </Badge>
+                        </div>
+
+                        {/* Seletor de Posição */}
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs text-muted-foreground">Onde usar:</Label>
+                          <Select
+                            value={imageWithPos.position}
+                            onValueChange={(value: ImageWithPosition['position']) => 
+                              updateImagePosition(imageWithPos.id, value)
+                            }
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {imagePositions.map(position => (
+                                <SelectItem key={position.value} value={position.value}>
+                                  <div className="flex flex-col">
+                                    <span>{position.label}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {position.description}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Ações */}
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const url = URL.createObjectURL(imageWithPos.file)
+                              window.open(url, '_blank')
+                            }}
+                          >
+                            <Icons.eye className="h-3 w-3 mr-1" />
+                            Visualizar
+                          </Button>
+                          
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              removeImage(imageWithPos.id)
+                              toast.success("Imagem removida!")
+                            }}
+                          >
+                            <Icons.trash className="h-3 w-3 mr-1" />
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                      onClick={() => removeImage(index)}
-                    >
-                      <Icons.x className="h-3 w-3" />
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {file.name}
-                    </p>
+                  ))}
+                </div>
+                
+                {/* Resumo das Posições */}
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm font-medium mb-2">📊 Resumo das Posições:</p>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+                    {imagePositions.map(position => {
+                      const count = formData.images.filter(img => img.position === position.value).length
+                      return (
+                        <div key={position.value} className="text-center">
+                          <div className="font-medium">{count}</div>
+                          <div className="text-muted-foreground">{position.label}</div>
+                        </div>
+                      )
+                    })}
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </div>

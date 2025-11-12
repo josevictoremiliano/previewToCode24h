@@ -40,7 +40,12 @@ const projectSchema = z.object({
     }),
   }),
   additionalResources: z.object({
-    images: z.array(z.string()),
+    images: z.array(z.object({
+      url: z.string(),
+      position: z.string(),
+      id: z.string(),
+      filename: z.string(),
+    })),
     customTexts: z.string().optional(),
     features: z.array(z.string()),
   }),
@@ -160,6 +165,7 @@ export async function POST(request: NextRequest) {
         type: "PROJECT_CREATED",
         title: "Landing page criada com sucesso!",
         message: `Seu site "${data.basicInfo.siteName}" foi criado e está sendo processado. Você receberá um preview em até 12 horas.`,
+        read: false
       },
     })
 
@@ -186,6 +192,7 @@ export async function POST(request: NextRequest) {
           type: "PROJECT_MANUAL",
           title: "Processamento será manual",
           message: `O site "${data.basicInfo.siteName}" será processado manualmente pela nossa equipe.`,
+          read: false
         }
       })
     }

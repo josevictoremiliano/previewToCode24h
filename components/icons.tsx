@@ -73,6 +73,8 @@ import {
   Maximize,
   Minimize,
   RefreshCw,
+  Code,
+  Image,
   type LucideIcon,
 } from "lucide-react"
 
@@ -172,4 +174,6 @@ export const Icons = {
   maximize: Maximize,
   minimize: Minimize,
   refresh: RefreshCw,
+  code: Code,
+  image: Image,
 }

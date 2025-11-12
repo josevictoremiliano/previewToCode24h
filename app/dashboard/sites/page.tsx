@@ -257,7 +257,21 @@ export default function MeusSitesPage() {
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/dashboard/sites/${site.id}/edit`}>
                         <Icons.edit className="mr-1 h-3 w-3" />
-                        Editar
+                        Admin
+                      </Link>
+                    </Button>
+                    
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/dashboard/sites/${site.id}/edit-content`}>
+                        <Icons.fileText className="mr-1 h-3 w-3" />
+                        Conteúdo
+                      </Link>
+                    </Button>
+                    
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/dashboard/sites/${site.id}/edit-images`}>
+                        <Icons.image className="mr-1 h-3 w-3" />
+                        Imagens
                       </Link>
                     </Button>
                   </div>

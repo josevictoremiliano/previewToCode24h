@@ -195,7 +195,7 @@ export async function processProjectWithAI(projectData: ProjectData, projectId: 
       where: { id: projectId },
       data: {
         status: 'PREVIEW',
-        previewUrl: `/preview/${projectId}`, // URL do preview
+        previewUrl: `/preview-page/${projectId}`, // URL do preview
         data: {
           ...projectData,
           generatedContent: {
@@ -220,7 +220,7 @@ export async function processProjectWithAI(projectData: ProjectData, projectId: 
     
     return {
       success: true,
-      previewUrl: `/preview/${projectId}`,
+      previewUrl: `/preview-page/${projectId}`,
       copy: generatedCopy,
       html: generatedHtml
     }
