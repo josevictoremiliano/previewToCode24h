@@ -201,12 +201,16 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
       const response = await fetch(`/api/admin/projects/${project.id}/generate-copy`, {
         method: 'POST'
       })
-      if (!response.ok) throw new Error('Erro ao gerar copy')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+        throw new Error(errorData.error || 'Erro ao gerar copy')
+      }
       toast.success("Copy gerada com sucesso!")
       fetchProject(project.id)
     } catch (error) {
       console.error('Erro:', error)
-      toast.error("Erro ao gerar copy")
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao gerar copy'
+      toast.error(errorMessage)
     } finally {
       setProcessing(null)
     }
@@ -221,12 +225,16 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
       const response = await fetch(`/api/admin/projects/${project.id}/generate-html`, {
         method: 'POST'
       })
-      if (!response.ok) throw new Error('Erro ao gerar HTML')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+        throw new Error(errorData.error || 'Erro ao gerar HTML')
+      }
       toast.success("HTML gerado com sucesso!")
       fetchProject(project.id)
     } catch (error) {
       console.error('Erro:', error)
-      toast.error("Erro ao gerar HTML")
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao gerar HTML'
+      toast.error(errorMessage)
     } finally {
       setProcessing(null)
     }
@@ -239,12 +247,16 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
       const response = await fetch(`/api/admin/projects/${project.id}/regenerate-copy`, {
         method: 'POST'
       })
-      if (!response.ok) throw new Error('Erro ao regenerar copy')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+        throw new Error(errorData.error || 'Erro ao regenerar copy')
+      }
       toast.success("Copy regenerada com sucesso!")
       fetchProject(project.id)
     } catch (error) {
       console.error('Erro:', error)
-      toast.error("Erro ao regenerar copy")
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao regenerar copy'
+      toast.error(errorMessage)
     } finally {
       setProcessing(null)
     }
@@ -257,12 +269,16 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
       const response = await fetch(`/api/admin/projects/${project.id}/approve-for-client`, {
         method: 'POST'
       })
-      if (!response.ok) throw new Error('Erro ao enviar para cliente')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+        throw new Error(errorData.error || 'Erro ao enviar para cliente')
+      }
       toast.success("Projeto enviado para aprovação do cliente!")
       fetchProject(project.id)
     } catch (error) {
       console.error('Erro:', error)
-      toast.error("Erro ao enviar para cliente")
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao enviar para cliente'
+      toast.error(errorMessage)
     } finally {
       setProcessing(null)
     }

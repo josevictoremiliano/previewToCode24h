@@ -43,7 +43,11 @@ export async function POST(
     })
 
     if (!aiConfig) {
-      throw new Error('Nenhuma configuração de IA ativa encontrada')
+      console.error('❌ Nenhuma configuração de IA ativa encontrada')
+      return NextResponse.json(
+        { error: 'Nenhuma configuração de IA ativa encontrada. Configure a IA nas configurações do sistema.' },
+        { status: 500 }
+      )
     }
 
     // Buscar template de prompt para geração de HTML
@@ -55,7 +59,11 @@ export async function POST(
     })
 
     if (!promptTemplate) {
-      throw new Error('Template de prompt para HTML não encontrado')
+      console.error('❌ Template de prompt para HTML não encontrado')
+      return NextResponse.json(
+        { error: 'Template de prompt para HTML não encontrado. Configure o template nas configurações do sistema.' },
+        { status: 500 }
+      )
     }
 
     // Preparar variáveis para o template
@@ -117,14 +125,23 @@ export async function POST(
     })
 
     if (!response.ok) {
-      throw new Error(`Erro na API da IA: ${response.status}`)
+      const errorText = await response.text()
+      console.error('❌ Erro na API da IA:', response.status, errorText)
+      return NextResponse.json(
+        { error: `Erro na API da IA: ${response.status}. Verifique a configuração da API key e tente novamente.` },
+        { status: 500 }
+      )
     }
 
     const aiResponse = await response.json()
     const generatedHtml = aiResponse.choices[0]?.message?.content || ''
 
     if (!generatedHtml.trim()) {
-      throw new Error('IA não retornou conteúdo HTML válido')
+      console.error('❌ IA não retornou conteúdo HTML válido')
+      return NextResponse.json(
+        { error: 'IA não retornou conteúdo HTML válido. Tente novamente.' },
+        { status: 500 }
+      )
     }
 
     // Log do uso da IA
@@ -178,8 +195,9 @@ export async function POST(
 
   } catch (error) {
     console.error('❌ Erro ao gerar HTML:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Erro interno do servidor'
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
