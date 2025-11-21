@@ -64,8 +64,8 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
     isActive: true
   })
 
-  const filteredPrompts = selectedCategory === 'all' 
-    ? prompts 
+  const filteredPrompts = selectedCategory === 'all'
+    ? prompts
     : prompts.filter(p => p.category === selectedCategory)
 
   const resetForm = () => {
@@ -111,11 +111,11 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
       }
 
       const updatedPrompt = await response.json()
-      const updatedPrompts = prompts.map(p => 
+      const updatedPrompts = prompts.map(p =>
         p.id === prompt.id ? updatedPrompt : p
       )
       onPromptsChange(updatedPrompts)
-      
+
       toast.success(`Template ${updatedPrompt.isActive ? 'ativado' : 'desativado'} com sucesso!`)
     } catch (error) {
       console.error('Erro:', error)
@@ -144,7 +144,7 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
 
       const updatedPrompts = prompts.filter(p => p.id !== prompt.id)
       onPromptsChange(updatedPrompts)
-      
+
       toast.success('Template excluído com sucesso!')
     } catch (error) {
       console.error('Erro:', error)
@@ -170,10 +170,10 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
         variables: variablesArray
       }
 
-      const url = editingPrompt 
-        ? `/api/admin/ai/prompts/${editingPrompt.id}` 
+      const url = editingPrompt
+        ? `/api/admin/ai/prompts/${editingPrompt.id}`
         : '/api/admin/ai/prompts'
-      
+
       const method = editingPrompt ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
@@ -188,10 +188,10 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
       }
 
       const updatedPrompt = await response.json()
-      
+
       if (editingPrompt) {
         // Atualizar template existente
-        const updatedPrompts = prompts.map(prompt => 
+        const updatedPrompts = prompts.map(prompt =>
           prompt.id === editingPrompt.id ? updatedPrompt : prompt
         )
         onPromptsChange(updatedPrompts)
@@ -201,7 +201,7 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
         onPromptsChange([updatedPrompt, ...prompts])
         toast.success('Template criado com sucesso!')
       }
-      
+
       resetForm()
     } catch (error) {
       console.error('Erro:', error)
@@ -277,8 +277,8 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
                     value={formData.name}
                     onChange={(e) => {
                       const name = e.target.value
-                      setFormData(prev => ({ 
-                        ...prev, 
+                      setFormData(prev => ({
+                        ...prev,
                         name,
                         key: generateKey(name)
                       }))
@@ -300,8 +300,8 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
 
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoria</Label>
-                  <Select 
-                    value={formData.category} 
+                  <Select
+                    value={formData.category}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
                   >
                     <SelectTrigger>
@@ -391,7 +391,7 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
                 {prompts.length === 0 ? 'Nenhum template encontrado' : 'Nenhum template nesta categoria'}
               </h3>
               <p className="text-muted-foreground text-center mb-4">
-                {prompts.length === 0 
+                {prompts.length === 0
                   ? 'Crie seu primeiro template ou inicialize os padrão'
                   : 'Tente uma categoria diferente ou crie um novo template'
                 }
@@ -445,7 +445,7 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Botões de Ação */}
                   <div className="flex gap-2 flex-wrap">
                     <Button
@@ -467,7 +467,7 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
                         </>
                       )}
                     </Button>
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -477,7 +477,7 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
                       <Icons.edit className="mr-2 h-4 w-4" />
                       Editar
                     </Button>
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -506,7 +506,7 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
                         </>
                       )}
                     </Button>
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -534,7 +534,7 @@ export function PromptsTab({ prompts, onPromptsChange, onReload, onInitializeDef
                   <div>
                     <span className="font-medium">Usos:</span>
                     <br />
-                    {prompt._count.usageLogs}
+                    {prompt._count?.usageLogs || 0}
                   </div>
                   <div>
                     <span className="font-medium">Variáveis:</span>

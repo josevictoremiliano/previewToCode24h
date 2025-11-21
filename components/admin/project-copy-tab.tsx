@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Icons } from "@/components/icons"
+import { toast } from "sonner"
 
 interface Project {
   id: string
@@ -20,24 +21,32 @@ interface ProjectCopyTabProps {
   regenerating: boolean
   onGenerateCopy: () => void
   onRegenerateCopy: () => void
-  onGenerateHtml: () => void
   onUpdateStatus: () => void
   onRefresh: () => void
 }
 
-export function ProjectCopyTab({ 
-  project, 
-  processing, 
-  regenerating, 
-  onGenerateCopy, 
-  onRegenerateCopy, 
-  onGenerateHtml, 
+export function ProjectCopyTab({
+  project,
+  processing,
+  regenerating,
+  onGenerateCopy,
+  onRegenerateCopy,
   onUpdateStatus,
-  onRefresh 
+  onRefresh
 }: ProjectCopyTabProps) {
   const [editingCopy, setEditingCopy] = useState(false)
   const [editedCopy, setEditedCopy] = useState(project.copy || "")
   const [copyFeedback, setCopyFeedback] = useState(project.copyFeedback || "")
+
+  // Atualizar editedCopy quando project.copy mudar
+  useEffect(() => {
+    setEditedCopy(project.copy || "")
+  }, [project.copy])
+
+  // Atualizar copyFeedback quando project.copyFeedback mudar
+  useEffect(() => {
+    setCopyFeedback(project.copyFeedback || "")
+  }, [project.copyFeedback])
 
   const saveCopy = async () => {
     try {
@@ -46,11 +55,18 @@ export function ProjectCopyTab({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ copy: editedCopy })
       })
-      if (!response.ok) throw new Error('Erro ao salvar copy')
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Erro ao salvar copy: ${response.status}`)
+      }
+
       setEditingCopy(false)
       onRefresh()
+      toast.success("Copy salva com sucesso!")
     } catch (error) {
       console.error('Erro ao salvar copy:', error)
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar copy")
     }
   }
 
@@ -64,8 +80,10 @@ export function ProjectCopyTab({
       if (!response.ok) throw new Error('Erro ao solicitar revisão')
       setCopyFeedback("")
       onRefresh()
+      toast.success("Solicitação de revisão enviada!")
     } catch (error) {
       console.error('Erro ao solicitar revisão:', error)
+      toast.error("Erro ao solicitar revisão")
     }
   }
 
@@ -81,7 +99,7 @@ export function ProjectCopyTab({
         {!project.copy ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">Nenhuma copy gerada ainda</p>
-            <Button 
+            <Button
               onClick={onGenerateCopy}
               disabled={processing === 'copy' || processing === 'copy-regenerate'}
             >
@@ -115,9 +133,9 @@ export function ProjectCopyTab({
                   </>
                 ) : (
                   <>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => {
                         setEditingCopy(false)
                         setEditedCopy(project.copy || "")
@@ -125,7 +143,7 @@ export function ProjectCopyTab({
                     >
                       Cancelar
                     </Button>
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={saveCopy}
                       disabled={processing === 'save-copy'}
@@ -141,7 +159,7 @@ export function ProjectCopyTab({
                 )}
               </div>
             </div>
-            
+
             {editingCopy ? (
               <Textarea
                 value={editedCopy}
@@ -168,7 +186,7 @@ export function ProjectCopyTab({
                 placeholder="Descreva as alterações que a IA deve fazer na copy..."
                 className="min-h-[100px]"
               />
-              <Button 
+              <Button
                 onClick={requestCopyRevision}
                 disabled={!copyFeedback.trim() || processing === 'copy-revision' || processing === 'copy' || processing === 'copy-regenerate'}
                 variant="outline"
@@ -188,18 +206,7 @@ export function ProjectCopyTab({
             <div className="flex gap-4">
               {(project.status === 'COPY_READY' || project.status === 'COPY_REVISION') && (
                 <>
-                  <Button 
-                    onClick={onGenerateHtml}
-                    disabled={processing === 'html'}
-                  >
-                    {processing === 'html' ? (
-                      <Icons.spinner className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Icons.code className="h-4 w-4 mr-2" />
-                    )}
-                    Gerar HTML
-                  </Button>
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={onUpdateStatus}
                   >

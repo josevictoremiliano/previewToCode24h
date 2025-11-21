@@ -150,15 +150,15 @@ export default function CriarSitePage() {
 
     try {
       const projectId = `project_${Date.now()}`
-      let processedImages = []
+      let processedImages: any[] = []
 
       // 1. Processar imagens se houver
       if (formData.additionalResources.images.length > 0) {
         console.log('📸 Processando', formData.additionalResources.images.length, 'imagens...')
-        
+
         try {
           toast.loading("Enviando imagens para MinIO...")
-          
+
           // Converter Files para base64
           const imageBase64Promises = formData.additionalResources.images.map(async (img) => {
             return new Promise<string>((resolve, reject) => {
@@ -168,10 +168,10 @@ export default function CriarSitePage() {
               reader.readAsDataURL(img.file)
             })
           })
-          
+
           const imagesBase64 = await Promise.all(imageBase64Promises)
           console.log('✅ Imagens convertidas para base64')
-          
+
           // Upload para MinIO
           const uploadResponse = await fetch("/api/upload-images", {
             method: "POST",
@@ -181,16 +181,16 @@ export default function CriarSitePage() {
               projectId: projectId
             })
           })
-          
+
           if (!uploadResponse.ok) {
             const errorText = await uploadResponse.text()
             console.error('❌ Erro no upload:', errorText)
             throw new Error(`Erro ao fazer upload das imagens: ${uploadResponse.status}`)
           }
-          
+
           const uploadResult = await uploadResponse.json()
           console.log('✅ Upload concluído:', uploadResult)
-          
+
           // Mapear URLs das imagens enviadas
           processedImages = formData.additionalResources.images.map((img, index) => {
             const uploadedImage = uploadResult.successful.find((success: any) => success.index === index)
@@ -201,11 +201,11 @@ export default function CriarSitePage() {
               filename: img.file.name
             }
           })
-          
+
           toast.dismiss()
           toast.success(`${uploadResult.successful.length} imagens enviadas para MinIO!`)
-          
-        } catch (imageError) {
+
+        } catch (imageError: any) {
           console.error('❌ Erro no processamento de imagens:', imageError)
           toast.dismiss()
           toast.error(`Erro no upload de imagens: ${imageError.message}`)
@@ -215,13 +215,47 @@ export default function CriarSitePage() {
         console.log('📸 Nenhuma imagem para processar')
       }
 
+      // 1.5 Processar Logo se houver
+      let logoUrl = formData.visualIdentity.logoUrl
+      if (formData.visualIdentity.logoFile) {
+        console.log('📸 Processando Logo...')
+        try {
+          const reader = new FileReader()
+          const logoBase64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = () => reject(new Error('Erro ao ler logo'))
+            reader.readAsDataURL(formData.visualIdentity.logoFile!)
+          })
+
+          const uploadResponse = await fetch("/api/upload-images", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              images: [logoBase64],
+              projectId: projectId
+            })
+          })
+
+          if (!uploadResponse.ok) throw new Error('Erro ao fazer upload do logo')
+
+          const uploadResult = await uploadResponse.json()
+          if (uploadResult.successful && uploadResult.successful.length > 0) {
+            logoUrl = uploadResult.successful[0].url
+            console.log('✅ Logo enviado:', logoUrl)
+          }
+        } catch (logoError) {
+          console.error('❌ Erro no upload do logo:', logoError)
+          toast.error("Erro ao enviar logo, usando URL temporária")
+        }
+      }
+
       // 2. Preparar dados do projeto
       const payload = {
         userId: session.user.id,
         projectId: projectId,
         basicInfo: formData.basicInfo,
         visualIdentity: {
-          logoUrl: formData.visualIdentity.logoUrl,
+          logoUrl: logoUrl, // Usar URL processada
           primaryColor: formData.visualIdentity.primaryColor,
           secondaryColor: formData.visualIdentity.secondaryColor,
           style: formData.visualIdentity.style,
@@ -360,13 +394,12 @@ export default function CriarSitePage() {
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-center">
               <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                  step.id === currentStep
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step.id === currentStep
                     ? "bg-primary text-primary-foreground"
                     : step.id < currentStep
-                    ? "bg-green-500 text-white"
-                    : "bg-muted text-muted-foreground"
-                }`}
+                      ? "bg-green-500 text-white"
+                      : "bg-muted text-muted-foreground"
+                  }`}
               >
                 {step.id < currentStep ? (
                   <Icons.checkCircle className="w-4 h-4" />
@@ -375,9 +408,8 @@ export default function CriarSitePage() {
                 )}
               </div>
               <div className="ml-2 hidden lg:block">
-                <p className={`text-sm font-medium ${
-                  step.id === currentStep ? "text-primary" : "text-muted-foreground"
-                }`}>
+                <p className={`text-sm font-medium ${step.id === currentStep ? "text-primary" : "text-muted-foreground"
+                  }`}>
                   {step.title}
                 </p>
               </div>

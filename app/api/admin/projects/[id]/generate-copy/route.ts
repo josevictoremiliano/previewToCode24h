@@ -3,13 +3,45 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// Interface para tipar o campo JSON project.data
+interface ProjectData {
+  basicInfo?: {
+    siteName?: string
+    slogan?: string
+    siteType?: string
+    niche?: string
+  }
+  content?: {
+    targetAudience?: string
+    description?: string
+    products?: string[]
+    cta?: string
+    sections?: Array<string | { name?: string; title?: string;[key: string]: any }>
+  }
+  visualIdentity?: {
+    style?: string
+    primaryColor?: string
+    secondaryColor?: string
+  }
+  additionalResources?: {
+    customTexts?: string
+    features?: string[]
+  }
+  contact?: {
+    email?: string
+    phone?: string
+    address?: string
+    socialMedia?: Record<string, string>
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log('🤖 API: Gerando copy para projeto...')
-    
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -31,119 +63,85 @@ export async function POST(
       return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
     }
 
-    // TODO: Verificar se é admin ou se o projeto pertence ao usuário
+    // Buscar configuração de IA ativa
+    const aiConfig = await prisma.aiConfig.findFirst({
+      where: { isActive: true }
+    })
 
-    console.log('📝 Gerando copy com IA seguindo padrão de landing page...')
-    
-    // Copy estruturada seguindo o padrão da imagem de referência
-    const mockCopy = `
-# HERO_SECTION
-## headline: ${project.data?.basicInfo?.siteName || 'Aumente seu faturamento e conquiste mais clientes'}
-## subheadline: ${project.data?.content?.description || `com ${project.data?.basicInfo?.niche || 'tráfego'} que realmente funciona!`}
-## description: ${project.data?.content?.description || 'Chega de gastar dinheiro com marketing que não dá resultado. Nossa metodologia comprovada já ajudou centenas de empresas a triplicar seu faturamento em menos de 90 dias.'}
-## cta_text: ${project.data?.content?.cta || 'QUERO AUMENTAR MINHAS VENDAS'}
-## hero_image: ${project.data?.additionalResources?.images?.[0] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[0]}]` : '[IMAGEM: Profissional confiante com resultados visíveis]'}
+    if (!aiConfig) {
+      return NextResponse.json({ error: 'Nenhuma configuração de IA ativa encontrada' }, { status: 500 })
+    }
 
-# SOCIAL_PROOF_SECTION  
-## testimonial_quote: "Cansei de perder tempo e dinheiro com tráfego que não funciona!"
-## testimonial_author: ${project.data?.content?.targetAudience || 'Empresário do setor'}
-## testimonial_description: Esta é a realidade de 9 em cada 10 empresários que já tentaram fazer marketing digital e não tiveram os resultados esperados. Se você também se identifica com esta situação, continue lendo.
+    // Buscar template de prompt para copy
+    const promptTemplate = await prisma.promptTemplate.findFirst({
+      where: { key: 'copy_creation', isActive: true }
+    })
 
-# PROBLEM_SECTION
-## title: Seu negócio está a um clique de ter:
-## problems:
-- Baixo retorno sobre investimento em marketing
-- Dificuldade para atrair clientes qualificados  
-- Falta de previsibilidade nas vendas
-- Dependência excessiva de indicações
+    if (!promptTemplate) {
+      return NextResponse.json({ error: 'Template de prompt não encontrado' }, { status: 500 })
+    }
 
-# SERVICES_SECTION
-## title: Nossos Serviços
-## services_list: ${project.data?.content?.products ? project.data.content.products.join(', ') : 'Estratégias de marketing digital, Gestão de tráfego pago, Otimização de conversões, Automação de vendas'}
-## service_1:
-### title: Diagnóstico
-### description: Análise completa do seu negócio para identificar oportunidades de crescimento
-### icon: [ÍCONE: Lupa/Análise]
+    console.log('📝 Gerando copy com IA...')
 
-## service_2:  
-### title: Estratégia
-### description: Criação de estratégia personalizada baseada no seu público e objetivos
-### icon: [ÍCONE: Estratégia/Planejamento]
+    // Type assertion para project.data
+    const projectData = project.data as ProjectData
 
-## service_3:
-### title: Execução  
-### description: Implementação e otimização contínua das campanhas para máximo retorno
-### icon: [ÍCONE: Engrenagem/Execução]
+    // Preparar variáveis para o prompt
+    const variables = {
+      siteName: project.briefing?.siteName || projectData?.basicInfo?.siteName || '',
+      slogan: projectData?.basicInfo?.slogan || '',
+      siteType: project.briefing?.businessType || projectData?.basicInfo?.siteType || '',
+      niche: projectData?.basicInfo?.niche || 'geral',
+      targetAudience: project.briefing?.targetAudience || projectData?.content?.targetAudience || 'público geral',
+      description: project.briefing?.description || projectData?.content?.description || '',
+      products: project.briefing?.mainServices || (Array.isArray(projectData?.content?.products) ? projectData.content.products.join(', ') : ''),
+      cta: projectData?.content?.cta || 'Entre em contato',
+      sections: Array.isArray(projectData?.content?.sections)
+        ? projectData.content.sections.map((s: any) => typeof s === 'string' ? s : s.name || s.title || JSON.stringify(s)).join(', ')
+        : 'hero,sobre,contato',
+      style: project.briefing?.style || projectData?.visualIdentity?.style || 'moderno',
+      primaryColor: project.briefing?.brandColors || projectData?.visualIdentity?.primaryColor || '#3B82F6',
+      secondaryColor: projectData?.visualIdentity?.secondaryColor || '#1E40AF',
+      customTexts: project.briefing?.additionalRequirements || projectData?.additionalResources?.customTexts || '',
+      features: Array.isArray(projectData?.additionalResources?.features) ? projectData.additionalResources.features.join(', ') : '',
+      email: project.briefing?.contactInfo || projectData?.contact?.email || '',
+      phone: projectData?.contact?.phone || '',
+      address: projectData?.contact?.address || '',
+      socialMedia: projectData?.contact?.socialMedia ? JSON.stringify(projectData.contact.socialMedia) : ''
+    }
 
-# ABOUT_SECTION
-## title: Prazer, somos ${project.data?.basicInfo?.siteName || 'Wagner César'}
-## description: ${project.data?.content?.description || 'Nos últimos anos ajudei centenas de empresários a transformarem seus negócios através do marketing digital. Minha missão é fazer com que você também tenha acesso a metodologia que já gerou milhões em faturamento para meus clientes.'}
-## about_image: ${project.data?.additionalResources?.images?.[1] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[1]}]` : '[IMAGEM: Equipe profissional ou especialista principal]'}
+    console.log('📝 Variáveis para o prompt:', JSON.stringify(variables, null, 2))
 
-# STRATEGY_SECTION
-## title: Minha estratégia de tráfego é a solução ideal para você que:
-## checklist:
-- Precisa de resultados rápidos e consistentes  
-- Quer ter previsibilidade no seu faturamento
-- Busca um método comprovado e eficiente
-- Deseja ter mais tempo para focar no seu negócio
-- Quer escalar sem depender apenas de indicações
-- Precisa de suporte especializado constante
+    // Substituir variáveis no prompt
+    let prompt = promptTemplate.prompt
+    for (const [key, value] of Object.entries(variables)) {
+      const placeholder = `{{ ${key} }}`
+      prompt = prompt.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), String(value))
+    }
 
-# TESTIMONIALS_SECTION  
-## title: Resultados Reais de Clientes Reais
-## testimonials:
-### testimonial_1: "Aumentou meu faturamento em 300% nos primeiros 60 dias"
-### testimonial_2: "Finalmente encontrei alguém que entende do meu negócio" 
-### testimonial_3: "O melhor investimento que já fiz na minha empresa"
-### testimonial_4: "Resultados que superaram todas as expectativas"
-### testimonial_5: "Profissionalismo e resultados garantidos"
+    // Decriptar chave (simples base64 por enquanto, conforme visto no ai-processor.ts)
+    const apiKey = Buffer.from(aiConfig.apiKey, 'base64').toString('utf8')
 
-# CREDIBILITY_SECTION
-## title: Se você acredita que seu marketing pode fazer mais, você está certo.
-## description: ${project.data?.content?.description || 'Através de estratégias comprovadas e metodologia testada, já transformei centenas de negócios. Agora é a sua vez de fazer parte desse seleto grupo de empresários que descobriram como vender mais através do marketing digital.'}
-## credibility_image: ${project.data?.additionalResources?.images?.[2] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[2]}]` : '[IMAGEM: Ambiente profissional inspirador]'}
+    const OpenAI = (await import('openai')).default
+    const openai = new OpenAI({
+      apiKey: apiKey,
+      baseURL: 'https://api.groq.com/openai/v1'
+    })
 
-# CTA_SECTION
-## title: Marque uma sessão estratégica gratuita agora!
-## description: Na chamada vamos analisar o seu negócio e mostrar como você pode aumentar seu faturamento nos próximos 90 dias.
-## cta_text: ${project.data?.content?.cta || 'QUERO AGENDAR MINHA SESSÃO'}
-## form_fields: Nome, E-mail, Telefone, Empresa
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: aiConfig.model,
+      max_tokens: aiConfig.maxTokens,
+      temperature: aiConfig.temperature,
+    })
 
-${project.data?.additionalResources?.customTexts?.includes('97,99') ? `
-# PRICING_SECTION
-## title: Nossos Planos
-## plan_basic:
-### name: Plano Básico
-### price: R$ 97,99
-### features: Design profissional, Entrega em 48h, 1 revisão inclusa, Suporte básico
-## plan_pro:
-### name: Plano Pro  
-### price: R$ 150,99
-### features: Design premium, Entrega em 24h, 3 revisões inclusas, Suporte prioritário, Formatos extras
-` : ''}
-
-# FAQ_SECTION
-## title: Perguntas Frequentes
-## faqs:
-### faq_1: Como garantir que o meu investimento terá retorno?
-### faq_2: Quanto tempo leva para ver os primeiros resultados?
-### faq_3: Qual a diferença do seu método?
-### faq_4: Como funciona o acompanhamento das campanhas?
-### faq_5: É só para empresas grandes?
-
-# CONTACT_INFO
-## email: ${project.data?.contact?.email || 'contato@empresa.com'}
-## phone: ${project.data?.contact?.phone || '(11) 99999-9999'}  
-## address: ${project.data?.contact?.address || 'São Paulo, Brasil'}
-## social_media: ${project.data?.contact?.socialMedia ? Object.entries(project.data.contact.socialMedia).filter(([, value]) => value && value.trim()).map(([socialType, socialValue]) => `${socialType}: ${socialValue}`).join(', ') : 'Instagram, Facebook, LinkedIn'}
-    `
+    const generatedCopy = completion.choices[0]?.message?.content || ''
 
     // Atualizar projeto com a copy gerada
     const updatedProject = await prisma.project.update({
       where: { id: projectId },
       data: {
-        copy: mockCopy.trim(),
+        copy: generatedCopy.trim(),
         status: 'COPY_READY',
         updatedAt: new Date()
       },
@@ -154,16 +152,31 @@ ${project.data?.additionalResources?.customTexts?.includes('97,99') ? `
       }
     })
 
+    // Registrar uso da IA
+    await prisma.aiUsageLog.create({
+      data: {
+        configId: aiConfig.id,
+        promptId: promptTemplate.id,
+        projectId: project.id,
+        userId: session.user.id,
+        inputTokens: completion.usage?.prompt_tokens || 0,
+        outputTokens: completion.usage?.completion_tokens || 0,
+        totalTokens: completion.usage?.total_tokens || 0,
+        success: true
+      }
+    })
+
     // Criar log da ação
     await prisma.projectLog.create({
       data: {
         projectId: project.id,
         userId: session.user.id,
         action: 'COPY_GENERATED',
-        description: `Copy gerada automaticamente pela IA por ${session.user.email}`,
+        description: `Copy gerada com IA (${aiConfig.model}) por ${session.user.email}`,
         metadata: {
           timestamp: new Date().toLocaleString('pt-BR'),
           method: 'AI_GENERATION',
+          model: aiConfig.model,
           admin: session.user.email
         }
       }
@@ -187,7 +200,7 @@ ${project.data?.additionalResources?.customTexts?.includes('97,99') ? `
   } catch (error) {
     console.error('❌ Erro ao gerar copy:', error)
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor: ' + (error instanceof Error ? error.message : String(error)) },
       { status: 500 }
     )
   }

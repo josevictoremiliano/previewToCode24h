@@ -9,6 +9,9 @@ import { toast } from "sonner"
 import { ConfigTab } from "./components/config-tab"
 import { PromptsTab } from "./components/prompts-tab"
 import { UsageTab } from "./components/usage-tab"
+import { V0Dashboard } from "./components/v0-dashboard"
+import { V0Monitoring } from "./components/v0-monitoring"
+import { V0Documentation } from "./components/v0-documentation"
 
 interface AiConfig {
   id: string
@@ -216,6 +219,9 @@ export default function AiManagementPage() {
         </TabsList>
 
         <TabsContent value="config">
+          <V0Dashboard configs={configs} />
+          <V0Monitoring configs={configs} />
+          <V0Documentation />
           <ConfigTab 
             configs={configs} 
             onConfigsChange={setConfigs}

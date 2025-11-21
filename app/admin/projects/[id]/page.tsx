@@ -9,7 +9,7 @@ import { PreviewPanel } from "@/components/admin/preview-panel"
 import { ProjectHeader } from "@/components/admin/project-header"
 import { ProjectBriefingTab } from "@/components/admin/project-briefing-tab"
 import { ProjectCopyTab } from "@/components/admin/project-copy-tab"
-import { ProjectHtmlTab } from "@/components/admin/project-html-tab"
+import { ProjectV0Tab } from "@/components/admin/project-v0-tab"
 import { ProjectLogsTab } from "@/components/admin/project-logs-tab"
 import { ProjectAdminTab } from "@/components/admin/project-admin-tab"
 import { toast } from "sonner"
@@ -84,7 +84,7 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
   const [isSendingWebhook, setIsSendingWebhook] = useState(false)
   const [adminNotes, setAdminNotes] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("")
-  
+
   const [processing, setProcessing] = useState<string | null>(null)
 
 
@@ -129,7 +129,7 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: selectedStatus,
           adminNotes: adminNotes
         })
@@ -174,16 +174,16 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
 
       await response.json()
       toast.success("Processamento com IA iniciado com sucesso!")
-      
+
       // Atualizar o status do projeto
-      setProject(prev => prev ? {...prev, status: 'PROCESSING'} : null)
+      setProject(prev => prev ? { ...prev, status: 'PROCESSING' } : null)
       setSelectedStatus('PROCESSING')
-      
+
       // Recarregar projeto para obter dados atualizados
       setTimeout(() => {
         fetchProject(project.id)
       }, 2000)
-      
+
     } catch (error) {
       console.error('Erro ao processar com IA:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
@@ -210,30 +210,6 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
     } catch (error) {
       console.error('Erro:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erro ao gerar copy'
-      toast.error(errorMessage)
-    } finally {
-      setProcessing(null)
-    }
-  }
-
-
-
-  const generateHtml = async () => {
-    if (!project) return
-    try {
-      setProcessing('html')
-      const response = await fetch(`/api/admin/projects/${project.id}/generate-html`, {
-        method: 'POST'
-      })
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
-        throw new Error(errorData.error || 'Erro ao gerar HTML')
-      }
-      toast.success("HTML gerado com sucesso!")
-      fetchProject(project.id)
-    } catch (error) {
-      console.error('Erro:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao gerar HTML'
       toast.error(errorMessage)
     } finally {
       setProcessing(null)
@@ -325,16 +301,16 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
 
   return (
     <div className="space-y-6">
-      <ProjectHeader 
-        project={project} 
-        onBack={() => router.push('/admin/projects')} 
+      <ProjectHeader
+        project={project}
+        onBack={() => router.push('/admin/projects')}
       />
 
       <Tabs defaultValue="briefing" className="space-y-6">
         <TabsList>
           <TabsTrigger value="briefing">Briefing</TabsTrigger>
           <TabsTrigger value="copy">Copy</TabsTrigger>
-          <TabsTrigger value="html">HTML</TabsTrigger>
+          <TabsTrigger value="html">V0 & HTML</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
           <TabsTrigger value="admin">Admin</TabsTrigger>
         </TabsList>
@@ -350,9 +326,9 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
               isUpdating={isUpdating}
             />
             <div className="h-[calc(100vh-200px)]">
-              <PreviewPanel 
-                project={project} 
-                onRefresh={() => fetchProject(project.id)} 
+              <PreviewPanel
+                project={project}
+                onRefresh={() => fetchProject(project.id)}
               />
             </div>
           </div>
@@ -367,14 +343,13 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
               regenerating={false}
               onGenerateCopy={generateCopy}
               onRegenerateCopy={regenerateCopy}
-              onGenerateHtml={generateHtml}
               onUpdateStatus={updateProjectStatus}
               onRefresh={() => fetchProject(project.id)}
             />
             <div className="h-[calc(100vh-200px)]">
-              <PreviewPanel 
-                project={project} 
-                onRefresh={() => fetchProject(project.id)} 
+              <PreviewPanel
+                project={project}
+                onRefresh={() => fetchProject(project.id)}
               />
             </div>
           </div>
@@ -383,18 +358,17 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
         {/* HTML Tab */}
         <TabsContent value="html">
           <div className="grid gap-6 lg:grid-cols-2">
-            <ProjectHtmlTab
+            <ProjectV0Tab
               project={project}
               processing={processing}
-              onGenerateHtml={generateHtml}
               onApproveForClient={approveForClient}
               onUpdateStatus={updateProjectStatus}
               onRefresh={() => fetchProject(project.id)}
             />
             <div className="h-[calc(100vh-200px)]">
-              <PreviewPanel 
-                project={project} 
-                onRefresh={() => fetchProject(project.id)} 
+              <PreviewPanel
+                project={project}
+                onRefresh={() => fetchProject(project.id)}
               />
             </div>
           </div>
@@ -421,9 +395,9 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
               onAssignToMe={assignToMe}
             />
             <div className="h-[calc(100vh-200px)]">
-              <PreviewPanel 
-                project={project} 
-                onRefresh={() => fetchProject(project.id)} 
+              <PreviewPanel
+                project={project}
+                onRefresh={() => fetchProject(project.id)}
               />
             </div>
           </div>

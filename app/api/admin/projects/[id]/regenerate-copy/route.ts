@@ -3,26 +3,59 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// Interface para tipar o campo JSON project.data
+interface ProjectData {
+  basicInfo?: {
+    siteName?: string
+    slogan?: string
+    siteType?: string
+    niche?: string
+  }
+  content?: {
+    targetAudience?: string
+    description?: string
+    products?: string[]
+    cta?: string
+    sections?: Array<string | { name?: string; title?: string;[key: string]: any }>
+  }
+  visualIdentity?: {
+    style?: string
+    primaryColor?: string
+    secondaryColor?: string
+  }
+  additionalResources?: {
+    customTexts?: string
+    features?: string[]
+  }
+  contact?: {
+    email?: string
+    phone?: string
+    address?: string
+    socialMedia?: Record<string, string>
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params
+    console.log('🔄 API: Regenerando copy para projeto...')
 
-    // Verificar autenticação e autorização admin
     const session = await getServerSession(authOptions)
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Buscar projeto com briefing
+    const resolvedParams = await params
+    const projectId = resolvedParams.id
+
+    // Buscar projeto
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
         user: true,
-        briefing: true,
-        assignedAdmin: true
+        briefing: true
       }
     })
 
@@ -30,106 +63,85 @@ export async function POST(
       return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
     }
 
-    console.log('🔄 API: Regenerando copy para projeto...')
+    // Buscar configuração de IA ativa
+    const aiConfig = await prisma.aiConfig.findFirst({
+      where: { isActive: true }
+    })
 
-    // Regenerar copy seguindo padrão de landing page moderna
-    console.log('📝 Regenerando copy com IA seguindo padrão estruturado...')
-    
-    const mockCopy = `
-# HERO_SECTION
-## headline: Transforme seu negócio com ${project.briefing?.businessType || 'estratégias digitais'}
-## subheadline: que realmente geram resultados comprovados!
-## description: ${project.briefing?.description || 'Pare de desperdiçar tempo e dinheiro com estratégias que não funcionam. Nossa metodologia já transformou centenas de empresas e agora é a sua vez de alcançar o próximo nível.'}
-## cta_text: QUERO TRANSFORMAR MEU NEGÓCIO
-## hero_image: ${project.data?.additionalResources?.images?.[0] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[0]}]` : '[IMAGEM: Profissional confiante com resultados visíveis]'}
+    if (!aiConfig) {
+      return NextResponse.json({ error: 'Nenhuma configuração de IA ativa encontrada' }, { status: 500 })
+    }
 
-# SOCIAL_PROOF_SECTION  
-## testimonial_quote: "Finalmente encontrei uma solução que funciona de verdade!"
-## testimonial_author: ${project.briefing?.targetAudience || 'Cliente satisfeito'}
-## testimonial_description: Assim como você, muitos empresários já tentaram diferentes abordagens sem sucesso. Descubra o que fez a diferença para quem já conseguiu os resultados desejados.
+    // Buscar template de prompt para copy
+    const promptTemplate = await prisma.promptTemplate.findFirst({
+      where: { key: 'copy_creation', isActive: true }
+    })
 
-# PROBLEM_SECTION
-## title: Seu ${project.briefing?.businessType || 'negócio'} merece mais:
-## problems:
-- Maior visibilidade no mercado
-- Clientes mais qualificados e engajados
-- Processos otimizados e eficientes  
-- Crescimento sustentável e previsível
+    if (!promptTemplate) {
+      return NextResponse.json({ error: 'Template de prompt não encontrado' }, { status: 500 })
+    }
 
-# SERVICES_SECTION
-## title: Como Podemos Ajudar Você
-## services_list: ${project.briefing?.mainServices || 'Consultoria especializada, Implementação de estratégias, Acompanhamento de resultados, Suporte contínuo'}
-## service_1:
-### title: Análise Completa
-### description: Diagnóstico detalhado para identificar oportunidades de melhoria no seu negócio
-### icon: [ÍCONE: Análise/Diagnóstico]
+    console.log('📝 Regenerando copy com IA...')
 
-## service_2:  
-### title: Estratégia Personalizada
-### description: Plano de ação customizado baseado nas suas necessidades específicas
-### icon: [ÍCONE: Estratégia/Planejamento]
+    // Type assertion para project.data
+    const projectData = project.data as ProjectData
 
-## service_3:
-### title: Implementação Guiada  
-### description: Execução acompanhada com suporte especializado em cada etapa
-### icon: [ÍCONE: Implementação/Suporte]
+    // Preparar variáveis para o prompt
+    const variables = {
+      siteName: project.briefing?.siteName || projectData?.basicInfo?.siteName || '',
+      slogan: projectData?.basicInfo?.slogan || '',
+      siteType: project.briefing?.businessType || projectData?.basicInfo?.siteType || '',
+      niche: projectData?.basicInfo?.niche || 'geral',
+      targetAudience: project.briefing?.targetAudience || projectData?.content?.targetAudience || 'público geral',
+      description: project.briefing?.description || projectData?.content?.description || '',
+      products: project.briefing?.mainServices || (Array.isArray(projectData?.content?.products) ? projectData.content.products.join(', ') : ''),
+      cta: projectData?.content?.cta || 'Entre em contato',
+      sections: Array.isArray(projectData?.content?.sections)
+        ? projectData.content.sections.map((s: any) => typeof s === 'string' ? s : s.name || s.title || JSON.stringify(s)).join(', ')
+        : 'hero,sobre,contato',
+      style: project.briefing?.style || projectData?.visualIdentity?.style || 'moderno',
+      primaryColor: project.briefing?.brandColors || projectData?.visualIdentity?.primaryColor || '#3B82F6',
+      secondaryColor: projectData?.visualIdentity?.secondaryColor || '#1E40AF',
+      customTexts: project.briefing?.additionalRequirements || projectData?.additionalResources?.customTexts || '',
+      features: Array.isArray(projectData?.additionalResources?.features) ? projectData.additionalResources.features.join(', ') : '',
+      email: project.briefing?.contactInfo || projectData?.contact?.email || '',
+      phone: projectData?.contact?.phone || '',
+      address: projectData?.contact?.address || '',
+      socialMedia: projectData?.contact?.socialMedia ? JSON.stringify(projectData.contact.socialMedia) : ''
+    }
 
-# ABOUT_SECTION
-## title: Conheça ${project.briefing?.siteName || 'Nossa Equipe'}
-## description: Com anos de experiência no mercado, nossa missão é transformar negócios através de soluções inovadoras e eficazes. Já ajudamos centenas de empresas a alcançarem seus objetivos e queremos fazer o mesmo por você.
-## about_image: ${project.data?.additionalResources?.images?.[1] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[1]}]` : '[IMAGEM: Equipe profissional ou especialista principal]'}
+    console.log('📝 Variáveis para o prompt:', JSON.stringify(variables, null, 2))
 
-# STRATEGY_SECTION
-## title: Nossa metodologia é ideal para você que busca:
-## checklist:
-- Resultados mensuráveis e sustentáveis
-- Processos eficientes e automatizados
-- Crescimento organizado e escalável
-- Diferenciação da concorrência
-- Maior produtividade da equipe
-- ROI positivo em suas ações
+    // Substituir variáveis no prompt
+    let prompt = promptTemplate.prompt
+    for (const [key, value] of Object.entries(variables)) {
+      const placeholder = `{{ ${key} }}`
+      prompt = prompt.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), String(value))
+    }
 
-# TESTIMONIALS_SECTION  
-## title: O Que Nossos Clientes Dizem
-## testimonials:
-### testimonial_1: "Superou todas as nossas expectativas"
-### testimonial_2: "Profissionalismo e qualidade incomparáveis" 
-### testimonial_3: "Investimento que realmente vale a pena"
-### testimonial_4: "Resultados visíveis desde o primeiro mês"
-### testimonial_5: "Recomendo para qualquer empresário sério"
+    // Decriptar chave (simples base64 por enquanto, conforme visto no ai-processor.ts)
+    const apiKey = Buffer.from(aiConfig.apiKey, 'base64').toString('utf8')
 
-# CREDIBILITY_SECTION
-## title: Acreditamos no potencial do seu ${project.briefing?.businessType || 'negócio'}
-## description: ${project.briefing?.description || 'Nossa experiência comprova que todo negócio tem potencial para crescer quando aplicadas as estratégias certas. Deixe-nos mostrar como você pode alcançar resultados extraordinários.'}
-## credibility_image: ${project.data?.additionalResources?.images?.[2] ? `[IMAGEM PERSONALIZADA: ${project.data.additionalResources.images[2]}]` : '[IMAGEM: Ambiente profissional inspirador]'}
+    const OpenAI = (await import('openai')).default
+    const openai = new OpenAI({
+      apiKey: apiKey,
+      baseURL: 'https://api.groq.com/openai/v1'
+    })
 
-# CTA_SECTION
-## title: Pronto para dar o próximo passo?
-## description: Agende uma conversa gratuita e descubra como podemos transformar os resultados do seu negócio.
-## cta_text: QUERO COMEÇAR AGORA
-## form_fields: Nome Completo, E-mail, Telefone, Empresa
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: aiConfig.model,
+      max_tokens: aiConfig.maxTokens,
+      temperature: aiConfig.temperature,
+    })
 
-# FAQ_SECTION
-## title: Dúvidas Frequentes
-## faqs:
-### faq_1: Como funciona o processo de trabalho?
-### faq_2: Quais garantias vocês oferecem?
-### faq_3: Em quanto tempo vejo resultados?
-### faq_4: O investimento vale a pena para meu porte de empresa?
-### faq_5: Como é feito o acompanhamento?
+    const generatedCopy = completion.choices[0]?.message?.content || ''
 
-# CONTACT_INFO
-## email: ${project.briefing?.contactInfo || 'contato@empresa.com'}
-## phone: ${project.briefing?.contactInfo || '(11) 99999-9999'}  
-## website: www.empresa.com.br
-## social_media: LinkedIn, Instagram, WhatsApp
-    `
-
-    // Atualizar projeto com a copy regerada
+    // Atualizar projeto com a copy regenerada
     const updatedProject = await prisma.project.update({
       where: { id: projectId },
       data: {
-        copy: mockCopy.trim(),
+        copy: generatedCopy.trim(),
         status: 'COPY_READY',
         updatedAt: new Date()
       },
@@ -140,16 +152,31 @@ export async function POST(
       }
     })
 
+    // Registrar uso da IA
+    await prisma.aiUsageLog.create({
+      data: {
+        configId: aiConfig.id,
+        promptId: promptTemplate.id,
+        projectId: project.id,
+        userId: session.user.id,
+        inputTokens: completion.usage?.prompt_tokens || 0,
+        outputTokens: completion.usage?.completion_tokens || 0,
+        totalTokens: completion.usage?.total_tokens || 0,
+        success: true
+      }
+    })
+
     // Criar log da ação
     await prisma.projectLog.create({
       data: {
         projectId: project.id,
         userId: session.user.id,
         action: 'COPY_REGENERATED',
-        description: `Copy regenerada automaticamente pela IA por ${session.user.email}`,
+        description: `Copy regenerada com IA (${aiConfig.model}) por ${session.user.email}`,
         metadata: {
           timestamp: new Date().toLocaleString('pt-BR'),
           method: 'AI_REGENERATION',
+          model: aiConfig.model,
           admin: session.user.email
         }
       }
@@ -173,7 +200,7 @@ export async function POST(
   } catch (error) {
     console.error('❌ Erro ao regenerar copy:', error)
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor: ' + (error instanceof Error ? error.message : String(error)) },
       { status: 500 }
     )
   }

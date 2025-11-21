@@ -1,0 +1,83 @@
+{
+  "userId": "cmhtxz6bw0000gdkwq7b5g47v",
+  "contact": {
+    "email": "teste@workflow.com",
+    "phone": "8499847756",
+    "address": "Rua dos Designs Fuertes",
+    "socialMedia": {
+      "twitter": "@DesignBrow",
+      "facebook": "facebook.com/DesignBrow",
+      "linkedin": "",
+      "whatsapp": "8499847756",
+      "instagram": "@DesignBrow"
+    }
+  },
+  "content": {
+    "cta": "Participar Agora",
+    "products": [
+      "Programa",
+      "design",
+      "modelo"
+    ],
+    "sections": [
+      "hero",
+      "beneficios",
+      "como-funciona"
+    ],
+    "description": "Bulet Criations é uma solução para design e criação de artes digitais",
+    "targetAudience": "Design graficos"
+  },
+  "basicInfo": {
+    "niche": "eventos",
+    "slogan": "",
+    "siteName": "Bulet Criations",
+    "siteType": "lancamento"
+  },
+  "projectId": "project_1762954055948",
+  "timestamp": "2025-11-12T13:27:41.726Z",
+  "visualIdentity": {
+    "style": "criativo",
+    "logoUrl": "blob:http://localhost:3000/bc810148-5b82-4daf-a884-ea7b60a95b2a",
+    "primaryColor": "#5a3bf7",
+    "referenceUrls": [],
+    "secondaryColor": "#2b6962"
+  },
+  "generatedContent": {
+    "copy": "Parece que ainda não recebi os dados específicos do seu site (nome, slogan, nicho, público‑alvo, etc.) nem a lista de seções que você deseja incluir na landing page.  \n\nPara que eu possa criar o copy persuasivo e alinhado ao seu negócio, por favor, forneça:\n\n1. **Informações do cliente**  \n   - Nome do site  \n   - Slogan  \n   - Tipo de site (ex.: e‑commerce, blog, portfólio)  \n   - Nicho  \n   - Público‑alvo  \n   - Descrição do negócio  \n   - Produtos/serviços  \n   - CTA principal  \n   - Seções solicitadas (ex.: hero, benefícios, contato)  \n   - Estilo visual  \n   - Cor primária e secundária  \n   - Textos personalizados (ex.: preços, promoções)  \n   - Features especiais  \n\n2. **Informações de contato**  \n   - Email real  \n   - Telefone real  \n   - Endereço real  \n   - Redes sociais (links)\n\nAssim que eu receber esses detalhes, poderei gerar o conteúdo exatamente nas seções que você precisa, com o tom certo para seu público e usando as cores e estilo indicados.  \n\nAguardo suas informações!",
+    "html": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"UTF-8\">\n<title>{{siteName}}</title>\n<meta name=\"description\" content=\"{{description}}\">\n<meta name=\"keywords\" content=\"{{businessType}}, {{targetAudience}}, {{mainServices}}\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<link href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" rel=\"stylesheet\">\n<style>\n:root{\n  --primary-color: {{brandColors.primary}};\n  --secondary-color: {{brandColors.secondary}};\n  --accent-color: {{brandColors.accent}};\n  --text-color: #333;\n  --bg-color: #fff;\n}\n*{box-sizing:border-box;margin:0;padding:0;}\nbody{font-family:'Roboto',sans-serif;color:var(--text-color);background:var(--bg-color);}\na{color:inherit;text-decoration:none;}\nheader{background:var(--primary-color);color:#fff;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;}\nheader nav ul{display:flex;list-style:none;}\nheader nav li{margin-left:1.5rem;}\nheader .logo{font-weight:700;font-size:1.5rem;}\n.hero{background:var(--secondary-color);color:#fff;text-align:center;padding:4rem 2rem;}\n.hero h1{font-size:2.5rem;margin-bottom:.5rem;}\n.hero p{font-size:1.2rem;margin-bottom:1.5rem;}\nsection{padding:3rem 2rem;}\nsection h2{font-size:2rem;margin-bottom:1rem;text-align:center;}\n.about{background:#f9f9f9;}\n.services{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;}\n.services .card{background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.1);}\n.services .card h3{margin-bottom:.5rem;color:var(--primary-color);}\n.contact form{display:grid;grid-template-columns:1fr;gap:1rem;}\n.contact input, .contact textarea{padding:.75rem;border:1px solid #ccc;border-radius:4px;width:100%;}\n.contact button{background:var(--primary-color);color:#fff;border:none;padding:.75rem;border-radius:4px;cursor:pointer;}\nfooter{background:#222;color:#ccc;text-align:center;padding:1rem 2rem;}\n@media(min-width:768px){\n  header nav ul{display:flex;}\n  .hero h1{font-size:3.5rem;}\n  .hero p{font-size:1.5rem;}\n  .contact form{grid-template-columns:1fr 1fr;}\n  .contact button{grid-column:span 2;}\n}\n@media(max-width:767px){\n  header nav ul{display:none;flex-direction:column;background:var(--primary-color);position:absolute;top:100%;right:0;width:200px;}\n  header nav ul.show{display:flex;}\n  header .menu-toggle{display:block;cursor:pointer;}\n  header nav ul li{margin:0;}\n}\n</style>\n</head>\n<body>\n<header>\n  <div class=\"logo\">{{siteName}}</div>\n  <div class=\"menu-toggle\" aria-label=\"Menu\" onclick=\"toggleMenu()\">☰</div>\n  <nav>\n    <ul id=\"navMenu\">\n      <li><a href=\"#hero\">Início</a></li>\n      <li><a href=\"#sobre\">Sobre</a></li>\n      <li><a href=\"#servicos\">Serviços</a></li>\n      <li><a href=\"#contato\">Contato</a></li>\n    </ul>\n  </nav>\n</header>\n\n<section id=\"hero\" class=\"hero\">\n  <h1>{{businessType}}</h1>\n  <p>{{description}}</p>\n</section>\n\n<section id=\"sobre\" class=\"sobre\">\n  <h2>Sobre Nós</h2>\n  <p>{{description}}</p>\n  <p>Nosso público-alvo são <strong>{{targetAudience}}</strong>, oferecendo soluções de alta qualidade.</p>\n</section>\n\n<section id=\"servicos\" class=\"services\">\n  <h2>Principais Serviços</h2>\n  <div class=\"card\"><h3>{{mainServices.0}}</h3><p>{{mainServicesDesc.0}}</p></div>\n  <div class=\"card\"><h3>{{mainServices.1}}</h3><p>{{mainServicesDesc.1}}</p></div>\n  <div class=\"card\"><h3>{{mainServices.2}}</h3><p>{{mainServicesDesc.2}}</p></div>\n</section>\n\n<section id=\"contato\" class=\"contact\">\n  <h2>Contato</h2>\n  <form action=\"{{contactInfo.formAction}}\" method=\"post\">\n    <input type=\"text\" name=\"name\" placeholder=\"Seu nome\" required>\n    <input type=\"email\" name=\"email\" placeholder=\"Seu e-mail\" required>\n    <textarea name=\"message\" rows=\"5\" placeholder=\"Sua mensagem\" required></textarea>\n    <button type=\"submit\">Enviar</button>\n  </form>\n</section>\n\n<footer>\n  <p>{{contactInfo.address}} | Tel: {{contactInfo.phone}} | Email: <a href=\"mailto:{{contactInfo.email}}\">{{contactInfo.email}}</a></p>\n  <p>&copy; {{siteName}} {{currentYear}}</p>\n</footer>\n\n<script>\nfunction toggleMenu(){\n  const menu = document.getElementById('navMenu');\n  menu.classList.toggle('show');\n}\n</script>\n</body>\n</html>",
+    "generatedAt": "2025-11-12T17:31:44.255Z"
+  },
+  "additionalResources": {
+    "images": [
+      {
+        "id": "1762953500656-0-ibnvk8qaq",
+        "url": "https://minio-rg4c04cc4k4c040ckckkk88c.painel.jotav.me/seusiteem24h/projects/project_1762954055948/images/image-1.jpeg",
+        "filename": "desktop-wallpaper_bromiusfight6.jpg",
+        "position": "hero"
+      },
+      {
+        "id": "1762953500656-1-kl9goqr3m",
+        "url": "https://minio-rg4c04cc4k4c040ckckkk88c.painel.jotav.me/seusiteem24h/projects/project_1762954055948/images/image-2.jpeg",
+        "filename": "desktop-wallpaper_wavetwood1.jpg",
+        "position": "about"
+      },
+      {
+        "id": "1762953500656-2-41sm4euj0",
+        "url": "https://minio-rg4c04cc4k4c040ckckkk88c.painel.jotav.me/seusiteem24h/projects/project_1762954055948/images/image-3.jpeg",
+        "filename": "desktop-wallpaper-voicing-tree.jpg",
+        "position": "gallery"
+      },
+      {
+        "id": "1762953519292-0-n42wicac8",
+        "url": "https://minio-rg4c04cc4k4c040ckckkk88c.painel.jotav.me/seusiteem24h/projects/project_1762954055948/images/image-4.png",
+        "filename": "6984546e-b5fc-42a9-824a-cddc1ba824ef.png",
+        "position": "logo"
+      }
+    ],
+    "features": [
+      "popup-exit",
+      "pricing-table"
+    ],
+    "customTexts": "valores 97,99 basic, 150,99 pro"
+  }
+}

@@ -43,15 +43,11 @@ export async function POST(
     })
 
     if (!aiConfig) {
-      console.error('❌ Nenhuma configuração de IA ativa encontrada')
-      return NextResponse.json(
-        { error: 'Nenhuma configuração de IA ativa encontrada. Configure a IA nas configurações do sistema.' },
-        { status: 500 }
-      )
+      throw new Error('Nenhuma configuração de IA ativa encontrada')
     }
 
     // Buscar template de prompt para geração de HTML
-    const promptTemplate = await prisma.promptTemplate.findFirst({
+    let promptTemplate = await prisma.promptTemplate.findFirst({
       where: { 
         key: 'html_creation',
         isActive: true 
@@ -59,38 +55,89 @@ export async function POST(
     })
 
     if (!promptTemplate) {
-      console.error('❌ Template de prompt para HTML não encontrado')
-      return NextResponse.json(
-        { error: 'Template de prompt para HTML não encontrado. Configure o template nas configurações do sistema.' },
-        { status: 500 }
-      )
+      // Fallback para html_generation
+      promptTemplate = await prisma.promptTemplate.findFirst({
+        where: { 
+          key: 'html_generation',
+          isActive: true 
+        }
+      })
+      
+      if (!promptTemplate) {
+        throw new Error('Template de prompt para HTML não encontrado')
+      }
+      
+      console.log('📝 Usando template html_generation como fallback')
     }
 
-    // Preparar variáveis para o template
+    // Extrair dados do projeto
+    const projectData = (typeof project.data === 'string' ? JSON.parse(project.data) : project.data) || {}
+    const briefingData = project.briefing || {}
+
+    // Processar imagens do projeto
+    const projectImages = projectData?.images || {}
+    const logoUrl = projectImages?.logo || projectData?.visualIdentity?.logoUrl || ''
+    const heroImageUrl = projectImages?.hero || projectImages?.banner || ''
+    
+    // URLs de imagens profissionais como fallback
+    const defaultImages = {
+      hero: heroImageUrl || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&h=600&fit=crop&crop=center',
+      about: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop&crop=center',
+      services: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop&crop=center',
+      team: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&h=600&fit=crop&crop=center',
+      contact: 'https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=800&h=600&fit=crop&crop=center'
+    }
+
+    // Preparar variáveis para o template do banco de dados
     const templateVariables = {
-      siteName: project.briefing?.siteName || project.name,
-      businessType: project.briefing?.businessType || 'Empresa',
-      description: project.briefing?.description || '',
-      targetAudience: project.briefing?.targetAudience || '',
-      mainServices: project.briefing?.mainServices || '',
-      contactInfo: project.briefing?.contactInfo || '',
-      brandColors: project.briefing?.brandColors || '#3B82F6, #1E40AF',
-      style: project.briefing?.style || 'moderno',
-      additionalRequirements: project.briefing?.additionalRequirements || '',
-      slogan: '',
-      siteType: project.briefing?.businessType || '',
-      niche: '',
-      products: project.briefing?.mainServices || '',
-      cta: 'Entre em contato',
-      sections: 'hero,sobre,servicos,contato',
-      primaryColor: '#3B82F6',
-      secondaryColor: '#1E40AF',
-      customTexts: '',
-      features: '',
-      email: project.briefing?.contactInfo || '',
-      phone: '',
-      address: '',
-      socialMedia: ''
+      // === DADOS BÁSICOS DO BRIEFING ===
+      siteName: briefingData.siteName || project.name,
+      businessType: briefingData.businessType || 'Empresa',
+      description: briefingData.description || '',
+      targetAudience: briefingData.targetAudience || '',
+      mainServices: briefingData.mainServices || '',
+      contactInfo: briefingData.contactInfo || '',
+      style: briefingData.style || 'moderno',
+      additionalRequirements: briefingData.additionalRequirements || '',
+      
+      // === DADOS COMPLEMENTARES DO PROJETO ===
+      slogan: projectData?.basicInfo?.slogan || briefingData.siteName || '',
+      siteType: briefingData.businessType || projectData?.basicInfo?.siteType || '',
+      niche: projectData?.basicInfo?.niche || briefingData.businessType || '',
+      products: briefingData.mainServices || projectData?.content?.products || '',
+      cta: projectData?.content?.cta || 'Entre em contato',
+      sections: projectData?.content?.sections ? (Array.isArray(projectData.content.sections) ? projectData.content.sections.join(', ') : projectData.content.sections) : 'hero,sobre,servicos,contato',
+      customTexts: projectData?.additionalResources?.customTexts || '',
+      features: projectData?.additionalResources?.features ? (Array.isArray(projectData.additionalResources.features) ? projectData.additionalResources.features.join(', ') : projectData.additionalResources.features) : '',
+      
+      // === CORES (BRIEFING TEM PRIORIDADE) ===
+      primaryColor: briefingData.brandColors?.[0] || projectData?.visualIdentity?.primaryColor || '#3B82F6',
+      secondaryColor: briefingData.brandColors?.[1] || projectData?.visualIdentity?.secondaryColor || '#1E40AF',
+      brandColors: briefingData.brandColors ? briefingData.brandColors.join(', ') : `${projectData?.visualIdentity?.primaryColor || '#3B82F6'}, ${projectData?.visualIdentity?.secondaryColor || '#1E40AF'}`,
+      
+      // === CONTATO (BRIEFING TEM PRIORIDADE) ===
+      email: briefingData.contactInfo || projectData?.contact?.email || '',
+      phone: projectData?.contact?.phone || '',
+      whatsapp: projectData?.contact?.whatsapp || '',
+      address: projectData?.contact?.address || '',
+      
+      // === REDES SOCIAIS ===
+      instagram: projectData?.contact?.instagram || '',
+      facebook: projectData?.contact?.facebook || '',
+      linkedin: projectData?.contact?.linkedin || '',
+      twitter: projectData?.contact?.twitter || '',
+      socialMedia: projectData?.contact?.socialMedia ? JSON.stringify(projectData.contact.socialMedia) : '',
+      
+      // === COPY GERADA (MAIS IMPORTANTE) ===
+      generatedContent: project.copy || '',
+      
+      // === IMAGENS PROCESSADAS ===
+      logoUrl: logoUrl,
+      heroImage: defaultImages.hero,
+      aboutImage: defaultImages.about,
+      servicesImage: defaultImages.services,
+      teamImage: defaultImages.team,
+      contactImage: defaultImages.contact
     }
 
     // Substituir variáveis no prompt
@@ -100,11 +147,57 @@ export async function POST(
       prompt = prompt.replace(placeholder, String(value || ''))
     })
 
-    // Chamar IA para gerar HTML
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    console.log('📝 Dados preparados:', {
+      templateKey: promptTemplate.key,
+      siteName: templateVariables.siteName,
+      hasGeneratedContent: !!templateVariables.generatedContent,
+      hasBriefing: !!briefingData.siteName,
+      primaryColor: templateVariables.primaryColor,
+      secondaryColor: templateVariables.secondaryColor,
+      hasImages: !!logoUrl,
+      contentPreview: templateVariables.generatedContent.substring(0, 100) + '...'
+    })
+
+    // Chamar IA para gerar HTML - USANDO DEEPSEEK
+    console.log('🚀 Usando DeepSeek API para geração de HTML...')
+    
+    // Validar se é DeepSeek
+    if (aiConfig.provider !== 'deepseek') {
+      throw new Error('Esta rota foi configurada para usar apenas DeepSeek. Configure DeepSeek em Admin > Configurações de IA.')
+    }
+
+    // Decodificar a chave da API
+    let apiKey: string
+    try {
+      // Tentar decodificar do base64
+      apiKey = Buffer.from(aiConfig.apiKey, 'base64').toString('utf8')
+    } catch (e) {
+      // Se não estiver em base64, usar como está
+      apiKey = aiConfig.apiKey
+    }
+
+    // Validar se a chave parece válida (deve começar com 'sk-' para DeepSeek)
+    if (!apiKey || !apiKey.startsWith('sk-')) {
+      console.error('❌ Chave de DeepSeek inválida:', {
+        hasKey: !!apiKey,
+        startsWithSk: apiKey?.startsWith('sk-'),
+        preview: apiKey?.substring(0, 10) + '...'
+      })
+      throw new Error('Chave de API DeepSeek inválida. Deve começar com "sk-". Verifique em https://platform.deepseek.com/api_keys')
+    }
+
+    console.log('🔑 Configuração DeepSeek:', {
+      provider: aiConfig.provider,
+      model: aiConfig.model,
+      keyPrefix: apiKey.substring(0, 10) + '...',
+      endpoint: 'https://api.deepseek.com/chat/completions'
+    })
+
+    // Usar fetch direto para DeepSeek API
+    const deepseekResponse = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Buffer.from(aiConfig.apiKey, 'base64').toString('utf8')}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -112,7 +205,7 @@ export async function POST(
         messages: [
           {
             role: 'system',
-            content: 'Você é um desenvolvedor web especialista que cria sites HTML completos, responsivos e modernos. Sempre use as cores fornecidas, ícones do Phosphor Icons e tamanhos fixos para imagens.'
+            content: 'Você é um desenvolvedor web especialista que cria sites HTML completos, responsivos e modernos. Use EXATAMENTE os dados fornecidos (briefing + copy gerada) sem inventar conteúdo. Aplique as cores corretas e posicione as imagens adequadamente.'
           },
           {
             role: 'user',
@@ -124,25 +217,31 @@ export async function POST(
       }),
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ Erro na API da IA:', response.status, errorText)
-      return NextResponse.json(
-        { error: `Erro na API da IA: ${response.status}. Verifique a configuração da API key e tente novamente.` },
-        { status: 500 }
-      )
+    if (!deepseekResponse.ok) {
+      const errorData = await deepseekResponse.json().catch(() => ({}))
+      console.error('❌ Erro da API DeepSeek:', {
+        status: deepseekResponse.status,
+        statusText: deepseekResponse.statusText,
+        error: errorData
+      })
+      throw new Error(`Erro DeepSeek API (${deepseekResponse.status}): ${errorData.error?.message || deepseekResponse.statusText}`)
     }
 
-    const aiResponse = await response.json()
-    const generatedHtml = aiResponse.choices[0]?.message?.content || ''
+    const deepseekData = await deepseekResponse.json()
+    const generatedHtml = deepseekData.choices?.[0]?.message?.content || ''
 
     if (!generatedHtml.trim()) {
-      console.error('❌ IA não retornou conteúdo HTML válido')
-      return NextResponse.json(
-        { error: 'IA não retornou conteúdo HTML válido. Tente novamente.' },
-        { status: 500 }
-      )
+      throw new Error('IA não retornou conteúdo HTML válido')
     }
+
+    console.log('🔍 HTML gerado:', {
+      length: generatedHtml.length,
+      hasDoctype: generatedHtml.includes('<!DOCTYPE'),
+      hasHtml: generatedHtml.includes('<html'),
+      hasColors: generatedHtml.includes(templateVariables.primaryColor),
+      hasImages: generatedHtml.includes('images.unsplash'),
+      preview: generatedHtml.substring(0, 150) + '...'
+    })
 
     // Log do uso da IA
     await prisma.aiUsageLog.create({
@@ -151,9 +250,9 @@ export async function POST(
         promptId: promptTemplate.id,
         projectId: project.id,
         userId: session.user.id,
-        inputTokens: aiResponse.usage?.prompt_tokens || 0,
-        outputTokens: aiResponse.usage?.completion_tokens || 0,
-        totalTokens: aiResponse.usage?.total_tokens || 0,
+        inputTokens: deepseekData.usage?.prompt_tokens || 0,
+        outputTokens: deepseekData.usage?.completion_tokens || 0,
+        totalTokens: deepseekData.usage?.total_tokens || 0,
         cost: 0,
         success: true
       }
@@ -183,21 +282,20 @@ export async function POST(
       data: {
         type: 'HTML_GENERATED',
         title: 'HTML Gerado',
-        message: `HTML foi gerado automaticamente pela IA para o projeto "${project.name}"`,
+        message: `HTML foi gerado com sucesso usando briefing + copy + template do banco para o projeto "${project.name}"`,
         userId: project.userId,
         projectId: project.id,
         read: false
       }
     })
 
-    console.log('✅ HTML gerado com sucesso pela IA')
+    console.log('✅ HTML gerado com sucesso usando template do banco de dados')
     return NextResponse.json(updatedProject)
 
   } catch (error) {
     console.error('❌ Erro ao gerar HTML:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Erro interno do servidor'
     return NextResponse.json(
-      { error: errorMessage },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     )
   }

@@ -64,6 +64,12 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
     'outros'
   ]
 
+  const v0Models = [
+    'v0-1',
+    'v0-2',
+    'outros'
+  ]
+
   const resetForm = () => {
     setFormData({
       provider: 'groq',
@@ -90,7 +96,9 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
       description: config.description || '',
       isActive: config.isActive
     })
-    setIsCustomModel(groqModels.includes(config.model) ? false : true)
+    const isGroqModel = groqModels.includes(config.model)
+    const isV0Model = v0Models.includes(config.model)
+    setIsCustomModel(!(isGroqModel || isV0Model))
     setShowForm(true)
   }
 
@@ -200,6 +208,12 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
 
   const testConfig = async (configId: string) => {
     setIsTesting(configId)
+    
+    // Encontrar a configuração para personalizar o teste
+    const config = configs.find(c => c.id === configId)
+    const testPrompt = config?.provider === 'v0' 
+      ? 'Create a simple professional button component with primary blue color, hover effects, and the text "Test Button"'
+      : 'Responda apenas "Teste OK" para confirmar que a conexão está funcionando.'
 
     try {
       const response = await fetch('/api/admin/ai/test', {
@@ -207,7 +221,7 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           configId,
-          testPrompt: 'Responda apenas "Teste OK" para confirmar que a conexão está funcionando.'
+          testPrompt
         })
       })
 
@@ -217,7 +231,13 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
       }
 
       const result = await response.json()
-      toast.success(`Teste realizado com sucesso! Resposta: ${result.response}`)
+      
+      // Mensagem personalizada baseada no provider
+      if (result.provider === 'v0') {
+        toast.success(`✨ V0 API funcionando! Componente gerado com sucesso (${result.responseTime}ms)`)
+      } else {
+        toast.success(`Teste realizado com sucesso! Resposta: ${result.response} (${result.responseTime}ms)`)
+      }
       
       onReload() // Atualizar dados para mostrar novo uso
 
@@ -272,6 +292,7 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
                       <SelectItem value="groq">Groq</SelectItem>
                       <SelectItem value="openai">OpenAI</SelectItem>
                       <SelectItem value="anthropic">Anthropic</SelectItem>
+                      <SelectItem value="v0">V0 (Vercel)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -312,6 +333,40 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
                         />
                       )}
                     </div>
+                  ) : formData.provider === 'v0' ? (
+                    <div className="space-y-2">
+                      <Select 
+                        value={isCustomModel ? 'outros' : formData.model} 
+                        onValueChange={(value) => {
+                          if (value === 'outros') {
+                            setIsCustomModel(true)
+                            setFormData(prev => ({ ...prev, model: '' }))
+                          } else {
+                            setIsCustomModel(false)
+                            setFormData(prev => ({ ...prev, model: value }))
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um modelo V0" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {v0Models.map(model => (
+                            <SelectItem key={model} value={model}>
+                              {model === 'outros' ? 'Outros (personalizado)' : model}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {isCustomModel && (
+                        <Input
+                          value={formData.model}
+                          onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
+                          placeholder="Digite o nome do modelo V0"
+                          required
+                        />
+                      )}
+                    </div>
                   ) : (
                     <Input
                       value={formData.model}
@@ -328,9 +383,43 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
                     type="password"
                     value={formData.apiKey}
                     onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
-                    placeholder="Sua chave da API"
+                    placeholder={
+                      formData.provider === 'v0' 
+                        ? "Sua chave da API V0 (Vercel)" 
+                        : "Sua chave da API"
+                    }
                     required
                   />
+                  {formData.provider === 'v0' && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Obtenha sua chave da API V0 em{' '}
+                        <a 
+                          href="https://vercel.com/dashboard/v0" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          vercel.com/dashboard/v0
+                        </a>
+                      </p>
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <h4 className="text-sm font-medium text-blue-900 mb-1">Recursos V0:</h4>
+                        <ul className="text-xs text-blue-700 space-y-1">
+                          <li>• Geração de componentes UI profissionais</li>
+                          <li>• Landing pages otimizadas para conversão</li>
+                          <li>• Design system moderno e responsivo</li>
+                          <li>• Integração automática com Tailwind CSS</li>
+                          <li>• Código HTML/CSS otimizado e limpo</li>
+                          <li>• Suporte a animações e interações modernas</li>
+                        </ul>
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                          <span className="text-green-700 font-medium">💡 Dica:</span>
+                          <span className="text-green-600 ml-1">V0 gera páginas com qualidade superior para landing pages e componentes visuais</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -419,12 +508,19 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <CardTitle className="text-lg">
                         {config.provider.toUpperCase()} - {config.model}
                       </CardTitle>
+                      {config.provider === 'v0' && (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          <Icons.zap className="w-3 h-3 mr-1" />
+                          UI Generator
+                        </Badge>
+                      )}
                       {config.isActive ? (
                         <Badge variant="default" className="bg-green-500">
+                          <Icons.check className="w-3 h-3 mr-1" />
                           Ativa
                         </Badge>
                       ) : (
@@ -434,7 +530,11 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
                       )}
                     </div>
                     <CardDescription>
-                      {config.description || 'Sem descrição'}
+                      {config.description || (
+                        config.provider === 'v0' 
+                          ? 'Gerador de componentes UI e landing pages profissionais da Vercel'
+                          : 'Sem descrição'
+                      )}
                     </CardDescription>
                   </div>
                   
@@ -524,19 +624,27 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="font-medium">Tokens máx:</span>
+                    <span className="font-medium">
+                      {config.provider === 'v0' ? 'Gerações máx:' : 'Tokens máx:'}
+                    </span>
                     <br />
                     {config.maxTokens.toLocaleString()}
                   </div>
                   <div>
-                    <span className="font-medium">Temperatura:</span>
+                    <span className="font-medium">
+                      {config.provider === 'v0' ? 'Qualidade:' : 'Temperatura:'}
+                    </span>
                     <br />
-                    {config.temperature}
+                    {config.provider === 'v0' ? 'Alta' : config.temperature}
                   </div>
                   <div>
-                    <span className="font-medium">Usos:</span>
+                    <span className="font-medium">
+                      {config.provider === 'v0' ? 'Componentes:' : 'Usos:'}
+                    </span>
                     <br />
-                    {config._count.usageLogs}
+                    <span className={config.provider === 'v0' ? 'text-purple-600 font-semibold' : ''}>
+                      {config._count.usageLogs}
+                    </span>
                   </div>
                   <div>
                     <span className="font-medium">Criado em:</span>
@@ -544,6 +652,26 @@ export function ConfigTab({ configs, onConfigsChange, onReload }: ConfigTabProps
                     {new Date(config.createdAt).toLocaleDateString()}
                   </div>
                 </div>
+                
+                {/* Informações específicas para V0 */}
+                {config.provider === 'v0' && (
+                  <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icons.checkCircle className="h-4 w-4 text-purple-600" />
+                      <span className="text-sm font-semibold text-purple-900">Status V0</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <span className="text-purple-700">Especialidade:</span>
+                        <div className="text-purple-600 font-medium">Landing Pages & UI</div>
+                      </div>
+                      <div>
+                        <span className="text-purple-700">Framework:</span>
+                        <div className="text-purple-600 font-medium">React + Tailwind</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))
