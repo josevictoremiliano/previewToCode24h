@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ozires - A Reimaginação de Landing Pages</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <script src="https://cdn.tailwindcss.com"></script>
+    @endif
+    <style>
+        body {
+            font-family: 'Instrument Sans', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .hero-glow {
+            background: radial-gradient(circle at center, rgba(14, 165, 233, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+        }
+    </style>
+</head>
+<body class="bg-[#050505] text-white antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <!-- Logo Placeholder -->
+                <div class="w-8 h-8 bg-gradient-to-br from-brand-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <span class="font-bold text-white">O</span>
+                </div>
+                <span class="text-xl font-bold tracking-tight">Ozires</span>
+            </div>
+            
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
+                <a href="#features" class="hover:text-white transition-colors">Funcionalidades</a>
+                <a href="#pricing" class="hover:text-white transition-colors">Planos</a>
+                <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
+            </nav>
+
+            <div class="flex items-center gap-4">
+                @if (Route::has('filament.admin.auth.login'))
+                    @auth
+                        <a href="{{ url('/admin') }}" class="text-sm font-medium text-zinc-300 hover:text-white transition-colors">Dashboard</a>
+                    @else
+                        <a href="{{ route('filament.admin.auth.login') }}" class="text-sm font-medium text-zinc-300 hover:text-white transition-colors">Entrar</a>
+                        @if (Route::has('register'))
+                            <a href="{{ route('register') }}" class="hidden sm:block px-4 py-2 bg-white text-black text-sm font-semibold rounded-full hover:bg-zinc-200 transition-colors">
+                                Começar Agora
+                            </a>
+                        @endif
+                    @endauth
+                @endif
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+            <div class="absolute inset-0 hero-glow pointer-events-none"></div>
+            
+            <div class="max-w-7xl mx-auto px-6 relative z-10 text-center">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-brand-500 mb-8 animate-fade-in-up">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-500 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+                    </span>
+                    Novidade: Hospedagem inclusa em todos os planos
+                </div>
+
+                <h1 class="text-5xl lg:text-7xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-500 max-w-4xl mx-auto leading-tight">
+                    A reimaginação de como você cria Landing Pages.
+                </h1>
+                
+                <p class="text-lg lg:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                    Tire sua ideia do papel. Em 24h seu site no ar com hospedagem inclusa de forma fácil e prática.
+                    Chega de dor de cabeça com infraestrutura.
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="#pricing" class="w-full sm:w-auto px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-full transition-all transform hover:scale-105 shadow-lg shadow-brand-500/25">
+                        Ver Planos e Preços
+                    </a>
+                    <a href="#features" class="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold rounded-full transition-all backdrop-blur-sm">
+                        Como funciona?
+                    </a>
+                </div>
+
+                <!-- Hero Image / Dashboard Preview -->
+                <div class="mt-20 relative max-w-5xl mx-auto">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-brand-500 to-purple-600 rounded-2xl blur opacity-20"></div>
+                    <div class="relative rounded-2xl bg-[#09090b] border border-white/10 overflow-hidden shadow-2xl">
+                        <img src="https://placehold.co/1200x800/18181b/FFF?text=Ozires+Dashboard+Preview" alt="App Interface" class="w-full h-auto opacity-90 hover:opacity-100 transition-opacity duration-700">
+                        
+                        <!-- Floating Elements (Decoration) -->
+                        <div class="absolute top-10 right-10 glass-card p-4 rounded-xl shadow-xl hidden lg:block animate-bounce duration-[3000ms]">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-zinc-400">Status</p>
+                                    <p class="text-sm font-bold text-white">Site Publicado</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section (Bento Grid) -->
+        <section id="features" class="py-24 bg-[#050505]">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold mb-4">Tudo que você precisa para vender mais</h2>
+                    <p class="text-zinc-400">Focamos na tecnologia para você focar no seu negócio.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Card 1: Large -->
+                    <div class="md:col-span-2 glass-card rounded-3xl p-8 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-brand-500/20"></div>
+                        <h3 class="text-2xl font-bold mb-2">Entrega em 24 horas</h3>
+                        <p class="text-zinc-400 mb-6 max-w-md">Não perca tempo configurando servidores. Nós entregamos sua landing page pronta para receber tráfego em tempo recorde.</p>
+                        <div class="h-32 bg-gradient-to-r from-zinc-900 to-zinc-800 rounded-xl border border-white/5 flex items-center justify-center">
+                            <span class="text-4xl font-mono text-brand-500">24:00:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="glass-card rounded-3xl p-8 group hover:border-brand-500/30 transition-colors">
+                        <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-400 mb-6">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Hospedagem Inclusa</h3>
+                        <p class="text-zinc-400 text-sm">Servidores de alta performance já configurados. Zero custo extra.</p>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="glass-card rounded-3xl p-8 group hover:border-brand-500/30 transition-colors">
+                        <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center text-green-400 mb-6">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Suporte 24/7</h3>
+                        <p class="text-zinc-400 text-sm">Nossa equipe técnica está sempre disponível para garantir que seu site nunca pare.</p>
+                    </div>
+
+                    <!-- Card 4: Large -->
+                    <div class="md:col-span-2 glass-card rounded-3xl p-8 relative overflow-hidden group">
+                        <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-brand-900/20 to-transparent"></div>
+                        <h3 class="text-2xl font-bold mb-2">Design Premium</h3>
+                        <p class="text-zinc-400 mb-6">Layouts otimizados para conversão e responsivos para qualquer dispositivo.</p>
+                        <div class="grid grid-cols-3 gap-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <div class="h-20 bg-zinc-800 rounded-lg"></div>
+                            <div class="h-20 bg-zinc-800 rounded-lg"></div>
+                            <div class="h-20 bg-zinc-800 rounded-lg"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="pricing" class="py-24 relative">
+            <div class="absolute inset-0 bg-zinc-900/50 skew-y-3 transform origin-bottom-right -z-10"></div>
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold mb-4">Planos Simples e Transparentes</h2>
+                    <p class="text-zinc-400">Comece pequeno e cresça com a gente.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <!-- Starter Plan -->
+                    <div class="glass-card p-8 rounded-3xl border border-white/5 hover:border-white/10 transition-colors">
+                        <h3 class="text-lg font-medium text-zinc-400">Starter</h3>
+                        <div class="mt-4 flex items-baseline gap-1">
+                            <span class="text-4xl font-bold text-white">R$ 59,90</span>
+                            <span class="text-zinc-500">/mês</span>
+                        </div>
+                        <ul class="mt-8 space-y-4 text-sm text-zinc-300">
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                1 Landing Page
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Hospedagem Inclusa
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                SSL Grátis
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 block w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-center font-semibold transition-colors">
+                            Escolher Starter
+                        </a>
+                    </div>
+
+                    <!-- Pro Plan (Featured) -->
+                    <div class="glass-card p-8 rounded-3xl border border-brand-500/50 relative transform md:-translate-y-4 shadow-2xl shadow-brand-900/20">
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-brand-500 text-white text-xs font-bold uppercase tracking-wide rounded-full">
+                            Mais Popular
+                        </div>
+                        <h3 class="text-lg font-medium text-brand-400">Pro</h3>
+                        <div class="mt-4 flex items-baseline gap-1">
+                            <span class="text-4xl font-bold text-white">R$ 99,90</span>
+                            <span class="text-zinc-500">/mês</span>
+                        </div>
+                        <ul class="mt-8 space-y-4 text-sm text-zinc-300">
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Até 3 Landing Pages
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Domínio Personalizado
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Analytics Avançado
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Suporte Prioritário
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 block w-full py-3 px-4 bg-brand-600 hover:bg-brand-500 rounded-xl text-center font-semibold transition-colors shadow-lg shadow-brand-500/25">
+                            Escolher Pro
+                        </a>
+                    </div>
+
+                    <!-- Agency Plan -->
+                    <div class="glass-card p-8 rounded-3xl border border-white/5 hover:border-white/10 transition-colors">
+                        <h3 class="text-lg font-medium text-zinc-400">Agency</h3>
+                        <div class="mt-4 flex items-baseline gap-1">
+                            <span class="text-4xl font-bold text-white">R$ 199,90</span>
+                            <span class="text-zinc-500">/mês</span>
+                        </div>
+                        <ul class="mt-8 space-y-4 text-sm text-zinc-300">
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Ilimitadas Landing Pages
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                White Label
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Gerente de Conta
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 block w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-center font-semibold transition-colors">
+                            Falar com Vendas
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-24">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="glass-card rounded-3xl p-12 text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-brand-900/20 to-purple-900/20 z-0"></div>
+                    <div class="relative z-10">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-6">Pronto para revolucionar sua presença digital?</h2>
+                        <p class="text-zinc-400 mb-8 max-w-2xl mx-auto">Junte-se a centenas de empreendedores que já estão vendendo mais com a Ozires.</p>
+                        <a href="/admin" class="inline-block px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-colors transform hover:scale-105">
+                            Criar Minha Conta Grátis
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 bg-[#050505] py-12">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-brand-600 rounded flex items-center justify-center text-xs font-bold">O</div>
+                <span class="font-bold text-lg">Ozires</span>
+            </div>
+            <div class="text-zinc-500 text-sm">
+                &copy; {{ date('Y') }} Ozires Tecnologia. Todos os direitos reservados.
+            </div>
+            <div class="flex gap-6">
+                <a href="#" class="text-zinc-500 hover:text-white transition-colors">Termos</a>
+                <a href="#" class="text-zinc-500 hover:text-white transition-colors">Privacidade</a>
+                <a href="#" class="text-zinc-500 hover:text-white transition-colors">Contato</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

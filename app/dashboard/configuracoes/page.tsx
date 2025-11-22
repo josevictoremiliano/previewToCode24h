@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,10 +12,23 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Icons } from "@/components/icons"
 import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function ConfiguracoesPage() {
   const { data: session, update } = useSession()
   const [isLoading, setIsLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [formData, setFormData] = useState({
     name: session?.user?.name || "",
     email: session?.user?.email || "",
@@ -24,7 +37,7 @@ export default function ConfiguracoesPage() {
     company: "",
     website: "",
   })
-  
+
   const [notifications, setNotifications] = useState({
     emailUpdates: true,
     projectNotifications: true,
@@ -41,16 +54,16 @@ export default function ConfiguracoesPage() {
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
+
     try {
       // Simular chamada para API
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       // Atualizar sessão
       await update({
         name: formData.name,
       })
-      
+
       toast.success("Perfil atualizado com sucesso!")
     } catch {
       toast.error("Erro ao atualizar perfil")
@@ -59,10 +72,50 @@ export default function ConfiguracoesPage() {
     }
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB")
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string
+
+        const response = await fetch("/api/upload/profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64 }),
+        })
+
+        if (!response.ok) throw new Error("Erro no upload")
+
+        const data = await response.json()
+
+        await update({
+          image: data.url
+        })
+
+        toast.success("Foto de perfil atualizada!")
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error(error)
+      toast.error("Erro ao atualizar foto de perfil")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
+
     try {
       await new Promise(resolve => setTimeout(resolve, 1000))
       toast.success("Senha alterada com sucesso!")
@@ -74,48 +127,14 @@ export default function ConfiguracoesPage() {
   }
 
   const handleDeleteAccount = async () => {
-    if (!confirm("Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.")) {
-      return
-    }
-    
     setIsLoading(true)
-    
+
     try {
       await new Promise(resolve => setTimeout(resolve, 2000))
       toast.success("Conta excluída com sucesso")
       await signOut({ callbackUrl: "/" })
     } catch {
       toast.error("Erro ao excluir conta")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleExportData = async () => {
-    setIsLoading(true)
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      // Simular download de dados
-      const data = {
-        user: session?.user,
-        projects: [],
-        created_at: new Date().toISOString(),
-      }
-      
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'meus-dados-site24h.json'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      
-      toast.success("Dados exportados com sucesso!")
-    } catch {
-      toast.error("Erro ao exportar dados")
     } finally {
       setIsLoading(false)
     }
@@ -151,9 +170,22 @@ export default function ConfiguracoesPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <Button type="button" variant="outline" size="sm">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                >
                   <Icons.upload className="h-4 w-4 mr-2" />
-                  Alterar Foto
+                  {isLoading ? "Enviando..." : "Alterar Foto"}
                 </Button>
                 <p className="text-sm text-muted-foreground">
                   JPG, PNG ou GIF. Máximo 2MB.
@@ -171,7 +203,7 @@ export default function ConfiguracoesPage() {
                   placeholder="Seu nome"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -182,7 +214,7 @@ export default function ConfiguracoesPage() {
                   placeholder="seu@email.com"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="phone">Telefone</Label>
                 <Input
@@ -192,7 +224,7 @@ export default function ConfiguracoesPage() {
                   placeholder="(11) 99999-9999"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="company">Empresa</Label>
                 <Input
@@ -259,7 +291,7 @@ export default function ConfiguracoesPage() {
                 placeholder="Digite sua senha atual"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="new-password">Nova senha</Label>
               <Input
@@ -268,7 +300,7 @@ export default function ConfiguracoesPage() {
                 placeholder="Digite sua nova senha"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirmar nova senha</Label>
               <Input
@@ -311,7 +343,7 @@ export default function ConfiguracoesPage() {
             </div>
             <Switch
               checked={notifications.emailUpdates}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setNotifications(prev => ({ ...prev, emailUpdates: checked }))
               }
             />
@@ -326,7 +358,7 @@ export default function ConfiguracoesPage() {
             </div>
             <Switch
               checked={notifications.projectNotifications}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setNotifications(prev => ({ ...prev, projectNotifications: checked }))
               }
             />
@@ -341,7 +373,7 @@ export default function ConfiguracoesPage() {
             </div>
             <Switch
               checked={notifications.marketingEmails}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setNotifications(prev => ({ ...prev, marketingEmails: checked }))
               }
             />
@@ -356,7 +388,7 @@ export default function ConfiguracoesPage() {
             </div>
             <Switch
               checked={notifications.weeklyReport}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setNotifications(prev => ({ ...prev, weeklyReport: checked }))
               }
             />
@@ -385,7 +417,7 @@ export default function ConfiguracoesPage() {
             </div>
             <Switch
               checked={privacy.profileVisible}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setPrivacy(prev => ({ ...prev, profileVisible: checked }))
               }
             />
@@ -400,7 +432,7 @@ export default function ConfiguracoesPage() {
             </div>
             <Switch
               checked={privacy.showEmail}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setPrivacy(prev => ({ ...prev, showEmail: checked }))
               }
             />
@@ -415,7 +447,7 @@ export default function ConfiguracoesPage() {
             </div>
             <Switch
               checked={privacy.allowIndexing}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setPrivacy(prev => ({ ...prev, allowIndexing: checked }))
               }
             />
@@ -428,32 +460,13 @@ export default function ConfiguracoesPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Icons.database className="h-5 w-5" />
-            Dados e Conta
+            Conta
           </CardTitle>
           <CardDescription>
-            Exporte seus dados ou exclua sua conta
+            Gerencie a exclusão da sua conta
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div>
-              <h4 className="font-medium">Exportar dados</h4>
-              <p className="text-sm text-muted-foreground">
-                Baixe uma cópia de todos os seus dados
-              </p>
-            </div>
-            <Button variant="outline" onClick={handleExportData} disabled={isLoading}>
-              {isLoading ? (
-                <Icons.spinner className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Icons.download className="h-4 w-4 mr-2" />
-              )}
-              Exportar
-            </Button>
-          </div>
-
-          <Separator />
-
           <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
             <div>
               <h4 className="font-medium text-red-900">Excluir conta</h4>
@@ -461,18 +474,35 @@ export default function ConfiguracoesPage() {
                 Exclua permanentemente sua conta e todos os dados
               </p>
             </div>
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteAccount} 
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Icons.spinner className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Icons.trash className="h-4 w-4 mr-2" />
-              )}
-              Excluir Conta
-            </Button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Icons.trash className="h-4 w-4 mr-2" />
+                  Excluir Conta
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Essa ação não pode ser desfeita. Isso excluirá permanentemente sua conta
+                    e removerá todos os seus dados de nossos servidores.
+                    <br /><br />
+                    Gostaríamos muito que você ficasse! Se houver algo que possamos fazer para melhorar sua experiência, entre em contato com nosso suporte.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                  >
+                    Sim, excluir minha conta
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CardContent>
       </Card>

@@ -75,12 +75,18 @@ import {
   RefreshCw,
   Code,
   Image,
+  LayoutDashboard,
+  Folder,
+  PlusCircle,
   type LucideIcon,
 } from "lucide-react"
 
 export type Icon = LucideIcon
 
 export const Icons = {
+  layoutDashboard: LayoutDashboard,
+  folder: Folder,
+  plusCircle: PlusCircle,
   spinner: Loader2,
   google: ({ ...props }: React.SVGProps<SVGSVGElement>) => (
     <svg
@@ -106,6 +112,8 @@ export const Icons = {
   eyeOff: EyeOff,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
+  chevronUp: ChevronUp,
+  chevronDown: ChevronDown,
   plus: Plus,
   search: Search,
   settings: Settings,
@@ -127,6 +135,7 @@ export const Icons = {
   upload: Upload,
   edit: Edit,
   trash: Trash2,
+  trash2: Trash2,
   star: Star,
   heart: Heart,
   share: Share2,
@@ -159,11 +168,8 @@ export const Icons = {
   trendingUp: TrendingUp,
   activity: Activity,
   zap: Zap,
-  trash2: Trash2,
   bot: Bot,
   brain: Brain,
-  chevronUp: ChevronUp,
-  chevronDown: ChevronDown,
   play: Play,
   playCircle: PlayCircle,
   pause: Pause,

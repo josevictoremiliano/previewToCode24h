@@ -11,13 +11,15 @@ import Link from "next/link"
 import Image from "next/image"
 import { useProjects } from "@/hooks/use-projects"
 import { toast } from "sonner"
+import { useDebounce } from "@/hooks/use-debounce"
 
 export default function MeusSitesPage() {
   const [searchTerm, setSearchTerm] = useState("")
+  const debouncedSearchTerm = useDebounce(searchTerm, 500)
   const [statusFilter, setStatusFilter] = useState("all")
   const [cancellingId, setCancellingId] = useState<string | null>(null)
-  
-  const { projects, isLoading, error, refetch } = useProjects(searchTerm, statusFilter)
+
+  const { projects, isLoading, error, refetch } = useProjects(debouncedSearchTerm, statusFilter)
 
   const handleCancelProject = async (projectId: string) => {
     if (!confirm("Tem certeza que deseja cancelar este projeto? Esta ação não pode ser desfeita.")) {
@@ -47,42 +49,42 @@ export default function MeusSitesPage() {
   const getStatusInfo = (status: string) => {
     switch (status) {
       case "COMPLETED":
-        return { 
+        return {
           badge: <Badge className="bg-green-100 text-green-800">Finalizado</Badge>,
           color: "text-green-600"
         }
       case "PREVIEW":
-        return { 
+        return {
           badge: <Badge className="bg-blue-100 text-blue-800">Preview Pronto</Badge>,
           color: "text-blue-600"
         }
       case "PENDING":
-        return { 
+        return {
           badge: <Badge className="bg-yellow-100 text-yellow-800">Em Análise</Badge>,
           color: "text-yellow-600"
         }
       case "PUBLISHED":
-        return { 
+        return {
           badge: <Badge className="bg-purple-100 text-purple-800">Publicado</Badge>,
           color: "text-purple-600"
         }
       case "APPROVED":
-        return { 
+        return {
           badge: <Badge className="bg-indigo-100 text-indigo-800">Aprovado</Badge>,
           color: "text-indigo-600"
         }
       case "REVISION":
-        return { 
+        return {
           badge: <Badge className="bg-orange-100 text-orange-800">Revisão</Badge>,
           color: "text-orange-600"
         }
       case "CANCELLED":
-        return { 
+        return {
           badge: <Badge className="bg-red-100 text-red-800">Cancelado</Badge>,
           color: "text-red-600"
         }
       default:
-        return { 
+        return {
           badge: <Badge variant="secondary">{status}</Badge>,
           color: "text-muted-foreground"
         }
@@ -185,8 +187,8 @@ export default function MeusSitesPage() {
             <Icons.globe className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Nenhuma landing page encontrada</h3>
             <p className="text-muted-foreground mb-4 text-center">
-              {searchTerm || statusFilter !== "all" 
-                ? "Tente ajustar os filtros de busca" 
+              {searchTerm || statusFilter !== "all"
+                ? "Tente ajustar os filtros de busca"
                 : "Você ainda não criou nenhum site"}
             </p>
             {!searchTerm && statusFilter === "all" && (
@@ -202,7 +204,7 @@ export default function MeusSitesPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((site) => {
             const statusInfo = getStatusInfo(site.status)
-            
+
             return (
               <Card key={site.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-video relative bg-muted">
@@ -223,7 +225,7 @@ export default function MeusSitesPage() {
                     </div>
                   )}
                 </div>
-                
+
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-lg line-clamp-2">{site.name}</CardTitle>
@@ -233,7 +235,7 @@ export default function MeusSitesPage() {
                     Criado em {new Date(site.createdAt).toLocaleDateString('pt-BR')}
                   </CardDescription>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-3">
                   <div className="flex flex-wrap gap-2">
                     {site.previewUrl && (
@@ -244,7 +246,7 @@ export default function MeusSitesPage() {
                         </Link>
                       </Button>
                     )}
-                    
+
                     {site.finalUrl && (
                       <Button variant="outline" size="sm" asChild>
                         <Link href={site.finalUrl} target="_blank">
@@ -253,21 +255,21 @@ export default function MeusSitesPage() {
                         </Link>
                       </Button>
                     )}
-                    
+
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/dashboard/sites/${site.id}/edit`}>
                         <Icons.edit className="mr-1 h-3 w-3" />
                         Admin
                       </Link>
                     </Button>
-                    
+
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/dashboard/sites/${site.id}/edit-content`}>
                         <Icons.fileText className="mr-1 h-3 w-3" />
                         Conteúdo
                       </Link>
                     </Button>
-                    
+
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/dashboard/sites/${site.id}/edit-images`}>
                         <Icons.image className="mr-1 h-3 w-3" />
@@ -275,17 +277,17 @@ export default function MeusSitesPage() {
                       </Link>
                     </Button>
                   </div>
-                  
+
                   <div className="flex justify-between items-center pt-2 border-t">
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm">
                         <Icons.download className="mr-1 h-3 w-3" />
                         Baixar
                       </Button>
-                      
+
                       {site.status === "PENDING" && (
-                        <Button 
-                          variant="destructive" 
+                        <Button
+                          variant="destructive"
                           size="sm"
                           onClick={() => handleCancelProject(site.id)}
                           disabled={cancellingId === site.id}
@@ -299,14 +301,14 @@ export default function MeusSitesPage() {
                         </Button>
                       )}
                     </div>
-                    
+
                     <div>
                       {site.status === "PREVIEW" && (
                         <Button size="sm">
                           Aprovar
                         </Button>
                       )}
-                      
+
                       {site.status === "COMPLETED" && (
                         <Button size="sm">
                           Publicar

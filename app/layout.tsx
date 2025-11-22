@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
-const inter = Inter({ subsets: ["latin"] });
+const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Site 24 Horas - Seu Site Profissional em 24 Horas",
+  title: "Ozires - A Reimaginação de Landing Pages",
   description: "Plataforma SaaS para criação de landing pages personalizadas entregues em até 24 horas",
 };
 
@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={instrumentSans.className}>
         <Providers>
           {children}
         </Providers>

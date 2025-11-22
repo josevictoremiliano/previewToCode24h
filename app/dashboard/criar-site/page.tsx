@@ -389,16 +389,16 @@ export default function CriarSitePage() {
       </Card>
 
       {/* Steps Navigation */}
-      <div className="hidden md:flex justify-center">
-        <div className="flex items-center space-x-4">
+      <div className="hidden md:flex justify-start overflow-x-auto pb-4 w-full">
+        <div className="flex items-center space-x-4 min-w-max px-4">
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-center">
               <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step.id === currentStep
-                    ? "bg-primary text-primary-foreground"
-                    : step.id < currentStep
-                      ? "bg-green-500 text-white"
-                      : "bg-muted text-muted-foreground"
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium shrink-0 ${step.id === currentStep
+                  ? "bg-primary text-primary-foreground"
+                  : step.id < currentStep
+                    ? "bg-green-500 text-white"
+                    : "bg-muted text-muted-foreground"
                   }`}
               >
                 {step.id < currentStep ? (
@@ -407,14 +407,14 @@ export default function CriarSitePage() {
                   step.id
                 )}
               </div>
-              <div className="ml-2 hidden lg:block">
+              <div className="ml-2 hidden lg:block whitespace-nowrap">
                 <p className={`text-sm font-medium ${step.id === currentStep ? "text-primary" : "text-muted-foreground"
                   }`}>
                   {step.title}
                 </p>
               </div>
               {index < steps.length - 1 && (
-                <div className="w-8 h-px bg-muted mx-4" />
+                <div className="w-8 h-px bg-muted mx-4 shrink-0" />
               )}
             </div>
           ))}

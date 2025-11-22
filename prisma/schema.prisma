@@ -39,8 +39,53 @@ model User {
   aiUsageLogs      AiUsageLog[]
   systemConfigs    SystemConfig[]
   projectLogs      ProjectLog[]
+  tickets          Ticket[]
+  ticketMessages   TicketMessage[]
 
   @@map("users")
+}
+
+// Modelo de Tickets de Suporte
+model Ticket {
+  id          String   @id @default(cuid())
+  subject     String
+  description String   @db.Text
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, CLOSED
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  messages    TicketMessage[]
+
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  
+  attachments TicketAttachment[]
+
+  @@map("ticket_messages")
+}
+
+model TicketAttachment {
+  id        String   @id @default(cuid())
+  url       String
+  filename  String
+  type      String   // image, pdf, etc
+  messageId String
+  message   TicketMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("ticket_attachments")
 }
 
 // Modelo para NextAuth.js
