@@ -128,6 +128,15 @@ export default function NotificacoesPage() {
                   </a>
                 </Button>
               )}
+              {(notification.title.toLowerCase().includes('ticket') ||
+                notification.message.toLowerCase().includes('ticket') ||
+                notification.message.toLowerCase().includes('suporte')) && (
+                  <Button size="sm" variant="outline" className="h-8 text-xs font-medium rounded-full" asChild>
+                    <a href={notification.project?.id ? `/dashboard/suporte/${notification.project.id}` : '/dashboard/suporte'}>
+                      Abrir Ticket
+                    </a>
+                  </Button>
+                )}
             </div>
 
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
