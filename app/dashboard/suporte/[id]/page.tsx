@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Icons } from "@/components/icons"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { X, CheckCircle2, Clock, AlertCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface Message {
     id: string
@@ -32,9 +34,10 @@ interface Ticket {
     id: string
     subject: string
     description: string
-    status: string
-    priority: string
+    status: "OPEN" | "IN_PROGRESS" | "CLOSED"
+    priority: "LOW" | "MEDIUM" | "HIGH"
     createdAt: string
+    protocol: string
 }
 
 export default function TicketChatPage({ params }: { params: Promise<{ id: string }> }) {
@@ -62,13 +65,23 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const msgsResponse = await fetch(`/api/tickets/${id}/messages`)
-                if (msgsResponse.ok) {
-                    const data = await msgsResponse.json()
-                    setMessages(data)
+                const [ticketRes, msgsRes] = await Promise.all([
+                    fetch(`/api/tickets/${id}`),
+                    fetch(`/api/tickets/${id}/messages`)
+                ])
+
+                if (ticketRes.ok) {
+                    const ticketData = await ticketRes.json()
+                    setTicket(ticketData)
+                }
+
+                if (msgsRes.ok) {
+                    const msgsData = await msgsRes.json()
+                    setMessages(msgsData)
                 }
             } catch (error) {
                 console.error("Error fetching data:", error)
+                toast.error("Erro ao carregar dados do ticket")
             } finally {
                 setIsLoading(false)
             }
@@ -140,29 +153,91 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
         }
     }
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case "OPEN": return "bg-blue-500"
+            case "IN_PROGRESS": return "bg-yellow-500"
+            case "CLOSED": return "bg-green-500"
+            default: return "bg-gray-500"
+        }
+    }
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case "OPEN": return "Aberto"
+            case "IN_PROGRESS": return "Em Andamento"
+            case "CLOSED": return "Fechado"
+            default: return status
+        }
+    }
+
+    const isTicketClosed = ticket?.status === "CLOSED"
+
     return (
-        <div className="flex flex-col h-[calc(100vh-100px)] max-w-4xl mx-auto space-y-4">
-            <div className="flex items-center justify-between">
-                <Button variant="ghost" onClick={() => router.back()}>
+        <div className="flex flex-col h-[calc(100vh-100px)] max-w-5xl mx-auto space-y-6">
+            {/* Header Section */}
+            <div className="flex flex-col gap-4">
+                <Button variant="ghost" className="w-fit pl-0 hover:bg-transparent hover:text-primary" onClick={() => router.back()}>
                     <Icons.arrowLeft className="mr-2 h-4 w-4" />
-                    Voltar
+                    Voltar para lista
                 </Button>
-                <h1 className="text-2xl font-bold">Chat do Suporte</h1>
+
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 bg-white dark:bg-card p-6 rounded-2xl border shadow-sm">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-bold">{ticket?.subject || "Carregando..."}</h1>
+                            {ticket && (
+                                <Badge variant="outline" className="font-normal">
+                                    #{ticket.protocol}
+                                </Badge>
+                            )}
+                        </div>
+                        <p className="text-muted-foreground max-w-2xl">
+                            {ticket?.description}
+                        </p>
+                    </div>
+
+                    {ticket && (
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-muted/50 p-2 rounded-lg border">
+                            <div className={`h-2.5 w-2.5 rounded-full ${getStatusColor(ticket.status)}`} />
+                            <span className="text-sm font-medium">
+                                {getStatusLabel(ticket.status)}
+                            </span>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            <Card className="flex-1 flex flex-col overflow-hidden">
-                <CardHeader className="border-b">
-                    <CardTitle>Mensagens</CardTitle>
+            {/* Chat Area */}
+            <Card className="flex-1 flex flex-col overflow-hidden border-none shadow-sm bg-white dark:bg-card rounded-2xl">
+                <CardHeader className="border-b px-6 py-4 flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg font-medium flex items-center gap-2">
+                        <Icons.messageSquare className="h-5 w-5 text-primary" />
+                        Histórico de Conversa
+                    </CardTitle>
+                    {isTicketClosed && (
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Ticket Encerrado
+                        </Badge>
+                    )}
                 </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+
+                <CardContent className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/30 dark:bg-muted/10">
                     {isLoading ? (
-                        <div className="flex justify-center p-4">
-                            <Icons.spinner className="h-6 w-6 animate-spin" />
+                        <div className="flex justify-center p-8">
+                            <Icons.spinner className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     ) : messages.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                            Nenhuma mensagem ainda. Comece a conversa!
-                        </p>
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                                <Icons.messageSquare className="h-8 w-8 text-primary" />
+                            </div>
+                            <h3 className="text-lg font-medium mb-2">Nenhuma mensagem ainda</h3>
+                            <p className="text-muted-foreground max-w-sm">
+                                Descreva seu problema detalhadamente para que possamos ajudar você da melhor forma.
+                            </p>
+                        </div>
                     ) : (
                         messages.map((msg) => {
                             const isMe = msg.user.id === session?.user?.id
@@ -171,37 +246,44 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
                                     key={msg.id}
                                     className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                                 >
-                                    <div
-                                        className={`flex gap-2 max-w-[80%] ${isMe ? "flex-row-reverse" : "flex-row"
-                                            }`}
-                                    >
-                                        <Avatar className="h-8 w-8">
+                                    <div className={`flex gap-3 max-w-[85%] md:max-w-[70%] ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                                        <Avatar className="h-8 w-8 mt-1 border-2 border-white dark:border-card shadow-sm">
                                             <AvatarImage src={msg.user.image || ""} />
-                                            <AvatarFallback>{msg.user.name?.[0] || "?"}</AvatarFallback>
+                                            <AvatarFallback className={isMe ? "bg-primary text-primary-foreground" : ""}>
+                                                {msg.user.name?.[0] || "?"}
+                                            </AvatarFallback>
                                         </Avatar>
-                                        <div
-                                            className={`rounded-lg p-3 ${isMe
-                                                ? "bg-primary text-primary-foreground"
-                                                : "bg-muted"
-                                                }`}
-                                        >
-                                            <p className="text-sm font-medium mb-1 opacity-70">
-                                                {msg.user.name}
+
+                                        <div className={`group relative rounded-2xl p-4 shadow-sm ${isMe
+                                                ? "bg-primary text-primary-foreground rounded-tr-none"
+                                                : "bg-white dark:bg-card border rounded-tl-none"
+                                            }`}>
+                                            <div className="flex items-center justify-between gap-4 mb-1">
+                                                <span className={`text-xs font-medium ${isMe ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                                                    {msg.user.name}
+                                                </span>
+                                                <span className={`text-[10px] ${isMe ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
+                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+
+                                            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                                                {msg.content}
                                             </p>
-                                            <p className="whitespace-pre-wrap">{msg.content}</p>
+
                                             {msg.attachments && msg.attachments.length > 0 && (
-                                                <div className="mt-2 space-y-2">
+                                                <div className="mt-3 space-y-2">
                                                     {msg.attachments.map((att) => (
                                                         <div key={att.id}>
                                                             {att.type === "image" ? (
                                                                 <div
                                                                     onClick={() => setLightboxImage(att.url)}
-                                                                    className="cursor-pointer hover:opacity-90 transition-opacity"
+                                                                    className="cursor-pointer hover:opacity-90 transition-opacity overflow-hidden rounded-lg border bg-black/5"
                                                                 >
                                                                     <img
                                                                         src={att.url}
                                                                         alt={att.filename}
-                                                                        className="rounded-md max-w-full max-h-60 object-cover"
+                                                                        className="max-w-full max-h-60 object-cover"
                                                                     />
                                                                 </div>
                                                             ) : (
@@ -209,18 +291,17 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
                                                                     href={att.url}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="text-xs underline"
+                                                                    className={`flex items-center gap-2 text-xs p-2 rounded-md ${isMe ? "bg-primary-foreground/10 hover:bg-primary-foreground/20" : "bg-muted hover:bg-muted/80"
+                                                                        }`}
                                                                 >
-                                                                    {att.filename}
+                                                                    <Icons.paperclip className="h-3 w-3" />
+                                                                    <span className="underline">{att.filename}</span>
                                                                 </a>
                                                             )}
                                                         </div>
                                                     ))}
                                                 </div>
                                             )}
-                                            <p className="text-[10px] mt-1 opacity-50 text-right">
-                                                {new Date(msg.createdAt).toLocaleTimeString()}
-                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -229,74 +310,102 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
                     )}
                     <div ref={messagesEndRef} />
                 </CardContent>
-                <div className="p-4 border-t bg-background">
-                    {selectedFile && (
-                        <div className="mb-2 flex items-center gap-2 bg-muted p-2 rounded-md">
-                            <Icons.image className="h-4 w-4" />
-                            <span className="text-sm truncate max-w-[200px]">
-                                {selectedFile.name}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 ml-auto"
-                                onClick={() => setSelectedFile(null)}
-                            >
-                                <X className="h-3 w-3" />
-                            </Button>
+
+                <div className="p-4 border-t bg-white dark:bg-card">
+                    {isTicketClosed ? (
+                        <div className="flex flex-col items-center justify-center py-4 text-center space-y-2 bg-gray-50 dark:bg-muted/30 rounded-xl border border-dashed">
+                            <CheckCircle2 className="h-8 w-8 text-green-500" />
+                            <h3 className="font-medium">Este ticket foi encerrado</h3>
+                            <p className="text-sm text-muted-foreground max-w-md">
+                                Não é possível enviar novas mensagens. Se precisar de mais ajuda, por favor abra um novo ticket.
+                            </p>
                         </div>
-                    )}
-                    <form onSubmit={handleSendMessage} className="flex gap-2">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            onChange={(e) => {
-                                if (e.target.files?.[0]) setSelectedFile(e.target.files[0])
-                            }}
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <Icons.image className="h-4 w-4" />
-                        </Button>
-                        <Input
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="Digite sua mensagem..."
-                            disabled={isSending}
-                        />
-                        <Button type="submit" disabled={isSending || (!newMessage.trim() && !selectedFile)}>
-                            {isSending ? (
-                                <Icons.spinner className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Icons.send className="h-4 w-4" />
+                    ) : (
+                        <>
+                            {selectedFile && (
+                                <div className="mb-3 flex items-center gap-3 bg-muted/50 p-2 pl-3 rounded-lg border w-fit">
+                                    <div className="h-8 w-8 bg-background rounded-md flex items-center justify-center border">
+                                        <Icons.image className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium truncate max-w-[200px]">
+                                            {selectedFile.name}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {(selectedFile.size / 1024).toFixed(1)} KB
+                                        </span>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 ml-2 hover:bg-background rounded-full"
+                                        onClick={() => setSelectedFile(null)}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             )}
-                        </Button>
-                    </form>
+                            <form onSubmit={handleSendMessage} className="flex gap-3 items-end">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        if (e.target.files?.[0]) setSelectedFile(e.target.files[0])
+                                    }}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-11 w-11 shrink-0 rounded-full"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    title="Anexar imagem"
+                                >
+                                    <Icons.image className="h-5 w-5 text-muted-foreground" />
+                                </Button>
+                                <Input
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="Digite sua mensagem..."
+                                    disabled={isSending}
+                                    className="h-11 rounded-full px-5 bg-gray-50 dark:bg-muted/30 border-gray-200 dark:border-border focus-visible:ring-offset-0"
+                                />
+                                <Button
+                                    type="submit"
+                                    disabled={isSending || (!newMessage.trim() && !selectedFile)}
+                                    className="h-11 w-11 shrink-0 rounded-full"
+                                    size="icon"
+                                >
+                                    {isSending ? (
+                                        <Icons.spinner className="h-5 w-5 animate-spin" />
+                                    ) : (
+                                        <Icons.send className="h-5 w-5" />
+                                    )}
+                                </Button>
+                            </form>
+                        </>
+                    )}
                 </div>
             </Card>
 
             {/* Image Lightbox Modal */}
             {lightboxImage && (
                 <div
-                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                    className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
                     onClick={() => setLightboxImage(null)}
                 >
                     <button
                         onClick={() => setLightboxImage(null)}
-                        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+                        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
                     >
-                        <X className="h-8 w-8" />
+                        <X className="h-6 w-6" />
                     </button>
                     <img
                         src={lightboxImage}
                         alt="Imagem ampliada"
-                        className="max-w-full max-h-full object-contain"
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     />
                 </div>
