@@ -78,6 +78,7 @@ import {
   LayoutDashboard,
   Folder,
   PlusCircle,
+  Tag,
   type LucideIcon,
 } from "lucide-react"
 
@@ -182,4 +183,5 @@ export const Icons = {
   refresh: RefreshCw,
   code: Code,
   image: Image,
+  tag: Tag,
 }

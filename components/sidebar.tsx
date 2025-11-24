@@ -15,26 +15,37 @@ const sidebarItems = [
     title: "Visão Geral",
     href: "/dashboard",
     icon: Icons.layoutDashboard,
+    color: "bg-blue-100 hover:bg-blue-200",
   },
   {
     title: "Meus Projetos",
     href: "/dashboard/sites",
     icon: Icons.folder,
+    color: "bg-yellow-100 hover:bg-yellow-200",
   },
   {
     title: "Criar Novo",
     href: "/dashboard/criar-site",
     icon: Icons.plusCircle,
+    color: "bg-green-100 hover:bg-green-200",
   },
   {
     title: "Assinatura",
     href: "/dashboard/assinatura",
     icon: Icons.creditCard,
+    color: "bg-red-100 hover:bg-red-200",
   },
   {
     title: "Configurações",
     href: "/dashboard/configuracoes",
     icon: Icons.settings,
+    color: "bg-slate-100 hover:bg-slate-200",
+  },
+  {
+    title: "Tickets",
+    href: "/dashboard/suporte",
+    icon: Icons.tag,
+    color: "bg-orange-100 hover:bg-orange-200",
   },
 ]
 
@@ -53,7 +64,7 @@ export function Sidebar({ className }: SidebarProps) {
                 className={cn(
                   "w-full justify-start relative h-12 mb-1 rounded-xl transition-all duration-200",
                   pathname === item.href
-                    ? "bg-white shadow-sm text-primary hover:bg-white hover:text-primary"
+                    ? "bg-white shadow-sm text-primary hover:bg-white hover:text-primary " + item.color
                     : "text-muted-foreground hover:bg-transparent hover:text-primary"
                 )}
                 asChild
