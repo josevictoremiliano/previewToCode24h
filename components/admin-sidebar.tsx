@@ -33,10 +33,9 @@ const adminSidebarItems = [
     icon: Icons.bot,
   },
   {
-    title: "Chat & Suporte",
-    href: "/admin/chat",
+    title: "Tickets de Suporte",
+    href: "/admin/tickets",
     icon: Icons.message,
-    badge: "Em breve",
   },
   {
     title: "Relatórios",
@@ -87,7 +86,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
             ))}
           </div>
         </div>
-        
+
         <div className="px-3 py-2">
           <div className="space-y-1">
             <Button variant="ghost" className="w-full justify-start" asChild>

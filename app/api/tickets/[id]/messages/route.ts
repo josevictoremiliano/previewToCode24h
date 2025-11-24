@@ -54,15 +54,26 @@ export async function POST(
         }
 
         const json = await req.json()
-        const { content, attachments } = json
+        const { content, attachments, isFromAdmin } = json
 
         if (!content && (!attachments || attachments.length === 0)) {
             return new NextResponse("Content or attachments required", { status: 400 })
         }
 
+        // Verificar se o ticket existe
+        const ticket = await prisma.ticket.findUnique({
+            where: { id },
+            include: { user: true }
+        })
+
+        if (!ticket) {
+            return new NextResponse("Ticket not found", { status: 404 })
+        }
+
         const message = await prisma.ticketMessage.create({
             data: {
                 content: content || "",
+                isFromAdmin: Boolean(isFromAdmin),
                 ticketId: id,
                 userId: session.user.id,
                 attachments: {
@@ -84,6 +95,24 @@ export async function POST(
                 attachments: true,
             },
         })
+
+        // Atualizar updatedAt do ticket
+        await prisma.ticket.update({
+            where: { id },
+            data: { updatedAt: new Date() }
+        })
+
+        // Criar notificação se mensagem for do admin
+        if (isFromAdmin && ticket.userId !== session.user.id) {
+            await prisma.notification.create({
+                data: {
+                    title: "Nova resposta no seu ticket",
+                    message: `O suporte respondeu no ticket #${ticket.protocol}`,
+                    type: "INFO",
+                    userId: ticket.userId,
+                },
+            })
+        }
 
         return NextResponse.json(message)
     } catch (error) {

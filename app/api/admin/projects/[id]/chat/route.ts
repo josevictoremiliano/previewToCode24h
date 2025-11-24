@@ -4,12 +4,12 @@ import { prisma } from "@/lib/prisma"
 
 async function handler(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const projectId = context.params.id
+    const { id: projectId } = await context.params
     const body = await request.json()
-    
+
     const { content, isFromAdmin } = body
 
     if (!content?.trim()) {

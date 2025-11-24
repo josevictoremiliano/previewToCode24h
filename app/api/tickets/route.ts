@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { generateTicketProtocol } from "@/lib/generate-ticket-protocol"
 
 export async function POST(req: NextRequest) {
     try {
@@ -18,8 +19,12 @@ export async function POST(req: NextRequest) {
             return new NextResponse("Subject and description are required", { status: 400 })
         }
 
+        // Gerar protocolo único
+        const protocol = await generateTicketProtocol()
+
         const ticket = await prisma.ticket.create({
             data: {
+                protocol,
                 subject,
                 description,
                 priority: priority || "MEDIUM",

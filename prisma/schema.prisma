@@ -48,6 +48,7 @@ model User {
 // Modelo de Tickets de Suporte
 model Ticket {
   id          String   @id @default(cuid())
+  protocol    String   @unique @default("") // Formato: AAAAMM00001 (ano + mês + sequência)
   subject     String
   description String   @db.Text
   status      String   @default("OPEN") // OPEN, IN_PROGRESS, CLOSED
@@ -65,6 +66,7 @@ model Ticket {
 model TicketMessage {
   id          String   @id @default(cuid())
   content     String   @db.Text
+  isFromAdmin Boolean  @default(false)
   ticketId    String
   ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   userId      String

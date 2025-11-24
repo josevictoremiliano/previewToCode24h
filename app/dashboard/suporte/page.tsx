@@ -23,6 +23,7 @@ import {
 
 interface Ticket {
     id: string
+    protocol: string
     subject: string
     description: string
     status: string
