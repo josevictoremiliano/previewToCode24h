@@ -24,38 +24,16 @@ interface PreviewPanelProps {
 export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedDevice, setSelectedDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
-  
+
   // Usar o campo htmlContent diretamente do projeto
-  const generatedHtml = project.htmlContent || 
-                       project.data?.generatedContent?.html || 
-                       project.data?.generatedHtml || 
-                       project.data?.htmlContent || 
-                       ''
+  const generatedHtml = project.htmlContent ||
+    project.data?.generatedContent?.html ||
+    project.data?.generatedHtml ||
+    project.data?.htmlContent ||
+    ''
 
-  // Auto refresh quando o status indica que HTML pode estar disponível
-  useEffect(() => {
-    if (project.status.includes('HTML') && !generatedHtml && onRefresh) {
-      const timer = setTimeout(() => {
-        console.log('Auto-refreshing devido ao status HTML sem conteúdo')
-        onRefresh()
-      }, 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [project.status, generatedHtml, onRefresh])
+  // Auto refresh removido para evitar loop infinito
 
-  // Debug: Log do conteúdo HTML
-  useEffect(() => {
-    console.log('PreviewPanel Debug:', {
-      projectId: project.id,
-      status: project.status,
-      htmlContentExists: !!project.htmlContent,
-      htmlContentLength: project.htmlContent?.length || 0,
-      dataExists: !!project.data,
-      generatedHtmlExists: !!generatedHtml,
-      generatedHtmlLength: generatedHtml?.length || 0
-    })
-  }, [project, generatedHtml])
-  
   const deviceSizes = {
     desktop: 'w-full',
     tablet: 'w-[768px]',
@@ -67,7 +45,7 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
       toast.error("Não há HTML gerado para baixar")
       return
     }
-    
+
     const blob = new Blob([generatedHtml], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -77,7 +55,7 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
+
     toast.success("HTML baixado com sucesso!")
   }
 
@@ -86,7 +64,7 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
       toast.error("Não há HTML para copiar")
       return
     }
-    
+
     navigator.clipboard.writeText(generatedHtml)
     toast.success("HTML copiado para a área de transferência!")
   }
@@ -109,11 +87,11 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
             <div>
               <h3 className="text-lg font-medium">Nenhum preview disponível</h3>
               <p className="text-muted-foreground">
-                {project.status === 'PROCESSING' ? 
-                  'Site sendo processado pela IA...' : 
+                {project.status === 'PROCESSING' ?
+                  'Site sendo processado pela IA...' :
                   project.status.includes('HTML') ?
-                  'HTML gerado, mas não encontrado' :
-                  'Execute o processamento de IA para gerar o preview'
+                    'HTML gerado, mas não encontrado' :
+                    'Execute o processamento de IA para gerar o preview'
                 }
               </p>
               <p className="text-xs text-muted-foreground mt-2">
@@ -144,7 +122,7 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
                 {project.status}
               </Badge>
             </CardTitle>
-            
+
             <div className="flex items-center gap-2">
               {/* Seletor de dispositivo */}
               <div className="flex border rounded-md">
@@ -173,18 +151,18 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
                   <Icons.smartphone className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <Separator orientation="vertical" className="h-6" />
-              
+
               {/* Ações */}
               <Button variant="outline" size="sm" onClick={handleDownload}>
                 <Icons.download className="h-4 w-4" />
               </Button>
-              
+
               <Button variant="outline" size="sm" onClick={copyHtml}>
                 <Icons.copy className="h-4 w-4" />
               </Button>
-              
+
               {project.previewUrl && (
                 <Button variant="outline" size="sm" asChild>
                   <a href={project.previewUrl} target="_blank" rel="noopener noreferrer">
@@ -192,7 +170,7 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
                   </a>
                 </Button>
               )}
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -204,7 +182,7 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
                   <Icons.maximize className="h-4 w-4" />
                 )}
               </Button>
-              
+
               {isFullscreen && (
                 <Button
                   variant="outline"
@@ -217,7 +195,7 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="flex-1 p-0">
           <div className="h-full bg-gray-50 flex items-center justify-center overflow-hidden">
             <div className={`${deviceSizes[selectedDevice]} h-full bg-white shadow-lg transition-all duration-300`}>
@@ -233,6 +211,7 @@ export function PreviewPanel({ project, onRefresh }: PreviewPanelProps) {
                   src={`/api/preview/${project.id}`}
                   className="w-full h-full border-0"
                   title="Preview do Site"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
                 />
               )}
             </div>

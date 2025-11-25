@@ -15,6 +15,7 @@ interface ProjectContent {
   brandColors: string
   style: string
   additionalRequirements?: string
+  logoUrl?: string
 }
 
 export async function PATCH(
@@ -56,7 +57,7 @@ export async function PATCH(
 
     // Preparar dados atualizados
     const currentData = (existingProject.data as any) || {}
-    
+
     const updatedData = {
       ...currentData,
       basicInfo: {
@@ -75,7 +76,8 @@ export async function PATCH(
       visualIdentity: {
         ...(currentData.visualIdentity || {}),
         brandColors: content.brandColors,
-        style: content.style
+        style: content.style,
+        logoUrl: content.logoUrl
       }
     }
 
@@ -138,9 +140,9 @@ export async function PATCH(
   } catch (error) {
     console.error("❌ Erro ao atualizar conteúdo:", error)
     console.error("Stack trace:", error instanceof Error ? error.stack : 'N/A')
-    
+
     return NextResponse.json(
-      { 
+      {
         error: "Erro interno do servidor",
         details: error instanceof Error ? error.message : "Erro desconhecido"
       },

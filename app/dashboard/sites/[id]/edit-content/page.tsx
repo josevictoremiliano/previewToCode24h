@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Icons } from "@/components/icons"
 import { toast } from "sonner"
+import { FileText, Palette, Image as ImageIcon, Save, ArrowLeft, Upload, Trash, Eye, Check, Layout, X } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog"
 
 interface ImageWithPosition {
   url: string
@@ -62,18 +64,20 @@ interface Props {
 }
 
 const imagePositions = [
-  { value: "logo", label: "🏷️ Logo", description: "Logo da empresa (formato PNG transparente recomendado)" },
-  { value: "favicon", label: "🔖 Favicon", description: "Ícone do site (32x32px recomendado)" },
-  { value: "hero", label: "🚀 Hero Principal", description: "Imagem de destaque na primeira seção" },
-  { value: "about", label: "👥 Sobre Nós", description: "Foto da equipe ou empresa" },
-  { value: "credibility", label: "🏆 Credibilidade", description: "Ambiente profissional ou certificações" },
-  { value: "gallery", label: "🖼️ Galeria", description: "Produtos, resultados ou portfólio" },
-  { value: "unassigned", label: "📋 Não Definido", description: "Disponível para uso geral" }
+  { value: "logo", label: "Logo", description: "Logo da empresa", icon: "🏷️" },
+  { value: "favicon", label: "Favicon", description: "Ícone do site", icon: "🔖" },
+  { value: "hero", label: "Hero Principal", description: "Destaque inicial", icon: "🚀" },
+  { value: "about", label: "Sobre Nós", description: "Foto da equipe", icon: "👥" },
+  { value: "credibility", label: "Credibilidade", description: "Certificações", icon: "🏆" },
+  { value: "gallery", label: "Galeria", description: "Portfólio/Produtos", icon: "🖼️" },
+  { value: "unassigned", label: "Geral", description: "Uso livre", icon: "📋" }
 ]
 
 export default function EditProjectContent({ params }: Props) {
   const router = useRouter()
+  const [activeSection, setActiveSection] = useState<'content' | 'branding' | 'images'>('content')
   const [project, setProject] = useState<Project | null>(null)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [content, setContent] = useState<ProjectContent>({
     siteName: '',
     slogan: '',
@@ -94,21 +98,14 @@ export default function EditProjectContent({ params }: Props) {
     params.then(setResolvedParams)
   }, [params])
 
-  useEffect(() => {
-    if (resolvedParams?.id) {
-      fetchProject(resolvedParams.id)
-    }
-  }, [resolvedParams])
-
   const fetchProject = async (projectId: string) => {
     try {
       const response = await fetch(`/api/projects/${projectId}`)
       if (!response.ok) throw new Error('Projeto não encontrado')
-      
+
       const projectData = await response.json()
       setProject(projectData)
-      
-      // Carregar conteúdo do briefing ou dados
+
       if (projectData.briefing) {
         setContent(projectData.briefing)
       } else if (projectData.data) {
@@ -117,20 +114,60 @@ export default function EditProjectContent({ params }: Props) {
           slogan: projectData.data.basicInfo?.slogan || '',
           description: projectData.data.content?.description || '',
           targetAudience: projectData.data.content?.targetAudience || '',
-          mainServices: '',
-          contactInfo: '',
-          brandColors: projectData.data.visualIdentity?.brandColors || '',
+          mainServices: projectData.data.content?.mainServices || projectData.data.basicInfo?.mainServices || '',
+          contactInfo: projectData.data.basicInfo?.contactInfo || projectData.data.content?.contactInfo || '',
+          brandColors: projectData.data.visualIdentity?.brandColors ||
+            (projectData.data.visualIdentity?.primaryColor ?
+              `${projectData.data.visualIdentity.primaryColor}${projectData.data.visualIdentity.secondaryColor ? `, ${projectData.data.visualIdentity.secondaryColor}` : ''}`
+              : ''),
           style: projectData.data.visualIdentity?.style || '',
-          additionalRequirements: ''
+          additionalRequirements: projectData.data.content?.additionalRequirements || ''
         })
       }
-      
-      // Tentar múltiplas fontes para as imagens
-      const images = projectData.images || 
-                   projectData.data?.additionalResources?.images || 
-                   []
-      
-      console.log('🖼️ Imagens carregadas na edição de conteúdo:', images)
+
+      let images: ImageWithPosition[] = []
+      const rawImages = projectData.images || projectData.data?.additionalResources?.images || []
+
+      // Normalize images
+      if (Array.isArray(rawImages)) {
+        images = rawImages.map((img: any, index: number) => {
+          if (typeof img === 'string') {
+            return {
+              id: `legacy-${index}`,
+              url: img,
+              position: 'unassigned',
+              filename: `Imagem ${index + 1}`
+            }
+          }
+          return img
+        })
+      }
+
+      // Sync Logo
+      if (projectData.data?.visualIdentity?.logoUrl) {
+        const logoUrl = projectData.data.visualIdentity.logoUrl
+        if (logoUrl && !logoUrl.startsWith('blob:') && !logoUrl.startsWith('data:')) {
+          const hasLogo = images.some(img => img.position === 'logo')
+          if (!hasLogo) {
+            images.unshift({
+              id: 'logo-from-identity',
+              url: logoUrl,
+              position: 'logo',
+              filename: 'Logo Atual'
+            })
+          } else {
+            // Update existing logo if it's a blob
+            images = images.map(img => {
+              if (img.position === 'logo' && (img.url.startsWith('blob:') || img.url.startsWith('data:'))) {
+                return { ...img, url: logoUrl }
+              }
+              return img
+            })
+          }
+        }
+      }
+
+      console.log('Processed images:', images)
       setImages(images)
     } catch (error) {
       console.error('Erro ao buscar projeto:', error)
@@ -141,12 +178,17 @@ export default function EditProjectContent({ params }: Props) {
     }
   }
 
+  useEffect(() => {
+    if (resolvedParams?.id) {
+      fetchProject(resolvedParams.id)
+    }
+  }, [resolvedParams])
   const updateContent = (field: keyof ProjectContent, value: string) => {
     setContent(prev => ({ ...prev, [field]: value }))
   }
 
   const updateImagePosition = (id: string, position: ImageWithPosition['position']) => {
-    setImages(prev => prev.map(img => 
+    setImages(prev => prev.map(img =>
       img.id === id ? { ...img, position } : img
     ))
   }
@@ -159,73 +201,58 @@ export default function EditProjectContent({ params }: Props) {
   const addNewImages = async (files: FileList | null, targetPosition?: ImageWithPosition['position']) => {
     if (!files || !resolvedParams?.id) return
 
+    const loadingToast = toast.loading(`Enviando ${files.length} imagem(ns)...`)
+
     const uploadPromises = Array.from(files).map(async (file) => {
       try {
-        // Validar arquivo
-        if (!file.type.startsWith('image/')) {
-          toast.error(`${file.name} não é uma imagem válida`)
-          return null
-        }
+        if (!file.type.startsWith('image/')) return null
+        if (file.size > 5 * 1024 * 1024) return null
 
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} é muito grande (máx 5MB)`)
-          return null
-        }
-
-        // Converter arquivo para base64 para upload
         const base64 = await new Promise<string>((resolve) => {
           const reader = new FileReader()
           reader.onload = () => resolve(reader.result as string)
           reader.readAsDataURL(file)
         })
 
-        // Upload para MinIO via API
         const uploadResponse = await fetch(`/api/upload-image`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             imageData: base64,
             projectId: resolvedParams.id,
-            imageName: file.name.replace(/\.[^/.]+$/, '') // Remove extensão
+            imageName: file.name.replace(/\.[^/.]+$/, '')
           })
         })
 
-        if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json()
-          throw new Error(errorData.error || 'Erro no upload')
-        }
+        if (!uploadResponse.ok) throw new Error('Erro no upload')
 
         const { url } = await uploadResponse.json()
-        
-        const newImage: ImageWithPosition = {
+
+        return {
           url,
           position: targetPosition || 'unassigned',
           id: `uploaded-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           filename: file.name
-        }
-
-        return newImage
+        } as ImageWithPosition
       } catch (error) {
-        console.error(`Erro ao fazer upload de ${file.name}:`, error)
-        toast.error(`Erro ao enviar ${file.name}`)
+        console.error(error)
         return null
       }
     })
 
-    toast.promise(
-      Promise.all(uploadPromises),
-      {
-        loading: `Enviando ${files.length} imagem(ns) para MinIO...`,
-        success: (results) => {
-          const validImages = results.filter(img => img !== null)
-          if (validImages.length > 0) {
-            setImages(prev => [...prev, ...validImages])
-          }
-          return `${validImages.length} imagem(ns) enviada(s) com sucesso!`
-        },
-        error: 'Erro ao enviar imagens'
+    try {
+      const results = await Promise.all(uploadPromises)
+      const validImages = results.filter((img): img is ImageWithPosition => img !== null)
+
+      if (validImages.length > 0) {
+        setImages(prev => [...prev, ...validImages])
+        toast.success(`${validImages.length} imagem(ns) enviada(s)!`, { id: loadingToast })
+      } else {
+        toast.error("Falha ao enviar imagens", { id: loadingToast })
       }
-    )
+    } catch (error) {
+      toast.error("Erro ao processar imagens", { id: loadingToast })
+    }
   }
 
   const saveChanges = async () => {
@@ -233,36 +260,28 @@ export default function EditProjectContent({ params }: Props) {
 
     setSaving(true)
     try {
-      // Salvar conteúdo
-      const contentResponse = await fetch(`/api/projects/${resolvedParams.id}/content`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
-      })
+      // Extract logo URL from images
+      const logoImage = images.find(img => img.position === 'logo')
+      const logoUrl = logoImage ? logoImage.url : undefined
 
-      // Salvar imagens (já processadas e no MinIO)
-      const imagesResponse = await fetch(`/api/projects/${resolvedParams.id}/images`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images })
-      })
+      // Prepare content payload with logoUrl
+      const contentPayload = { ...content, logoUrl }
 
-      if (!contentResponse.ok) {
-        const contentError = await contentResponse.text()
-        console.error('Erro na API de conteúdo:', contentError)
-        throw new Error(`Erro ao salvar conteúdo: ${contentResponse.status}`)
-      }
-
-      if (!imagesResponse.ok) {
-        const imagesError = await imagesResponse.text()
-        console.error('Erro na API de imagens:', imagesError)
-        throw new Error(`Erro ao salvar imagens: ${imagesResponse.status}`)
-      }
+      await Promise.all([
+        fetch(`/api/projects/${resolvedParams.id}/content`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: contentPayload })
+        }),
+        fetch(`/api/projects/${resolvedParams.id}/images`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images })
+        })
+      ])
 
       toast.success("Alterações salvas com sucesso!")
-      router.push(`/dashboard/sites`)
     } catch (error) {
-      console.error('Erro ao salvar:', error)
       toast.error("Erro ao salvar alterações")
     } finally {
       setSaving(false)
@@ -275,466 +294,360 @@ export default function EditProjectContent({ params }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Icons.spinner className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground animate-pulse">Carregando conteúdo...</p>
+        </div>
       </div>
     )
   }
 
-  if (!project) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Projeto não encontrado</p>
-        <Button onClick={() => router.push('/dashboard/sites')} className="mt-4">
-          Voltar aos Projetos
-        </Button>
-      </div>
-    )
-  }
+  if (!project) return null
+
+  const navItems = [
+    { id: 'content', label: 'Conteúdo Textual', icon: FileText, description: 'Textos e informações básicas' },
+    { id: 'branding', label: 'Identidade Visual', icon: Palette, description: 'Logo, cores e estilo' },
+    { id: 'images', label: 'Galeria de Imagens', icon: ImageIcon, description: 'Gerenciamento de mídia' },
+  ] as const
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto pb-10" >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{project.name}</h1>
-          <p className="text-muted-foreground">Editar conteúdo e recursos visuais</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.back()}>
-            <Icons.arrowLeft className="h-4 w-4 mr-2" />
-            Voltar
+      < div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8" >
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="mt-1">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <Button onClick={saveChanges} disabled={saving}>
-            {saving ? <Icons.spinner className="h-4 w-4 animate-spin mr-2" /> : <Icons.save className="h-4 w-4 mr-2" />}
-            Salvar Alterações
-          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
+            <p className="text-muted-foreground">Gerenciamento de conteúdo e mídia</p>
+          </div>
         </div>
-      </div>
+        <Button onClick={saveChanges} disabled={saving} size="lg" className="shadow-sm">
+          {saving ? <Icons.spinner className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+          Salvar Alterações
+        </Button>
+      </div >
 
-      <Tabs defaultValue="content" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="content">Conteúdo</TabsTrigger>
-          <TabsTrigger value="branding">Identidade Visual</TabsTrigger>
-          <TabsTrigger value="images">Imagens</TabsTrigger>
-        </TabsList>
+      <div className="grid lg:grid-cols-12 gap-8">
+        {/* Sidebar Navigation */}
+        <div className="lg:col-span-3 space-y-2">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveSection(item.id)}
+              className={cn(
+                "w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200",
+                activeSection === item.id
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <div className={cn(
+                "p-2 rounded-lg",
+                activeSection === item.id ? "bg-primary-foreground/10" : "bg-background border"
+              )}>
+                <item.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-medium text-sm">{item.label}</div>
+                <div className={cn(
+                  "text-xs",
+                  activeSection === item.id ? "text-primary-foreground/80" : "text-muted-foreground"
+                )}>
+                  {item.description}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
 
-        {/* Conteúdo */}
-        <TabsContent value="content">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações Básicas</CardTitle>
-                <CardDescription>Informações principais do site</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="siteName">Nome do Site</Label>
-                  <Input
-                    id="siteName"
-                    value={content.siteName}
-                    onChange={(e) => updateContent('siteName', e.target.value)}
-                    placeholder="Ex: Minha Empresa"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="slogan">Slogan/Headline</Label>
-                  <Input
-                    id="slogan"
-                    value={content.slogan}
-                    onChange={(e) => updateContent('slogan', e.target.value)}
-                    placeholder="Ex: Transforme seu negócio"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="targetAudience">Público-Alvo</Label>
-                  <Input
-                    id="targetAudience"
-                    value={content.targetAudience}
-                    onChange={(e) => updateContent('targetAudience', e.target.value)}
-                    placeholder="Ex: Pequenas empresas"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+        {/* Main Content Area */}
+        <div className="lg:col-span-9 space-y-6">
+          {activeSection === 'content' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle>Informações Principais</CardTitle>
+                  <CardDescription>Dados essenciais para o desenvolvimento do site</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Nome do Site</Label>
+                      <Input
+                        value={content.siteName}
+                        onChange={(e) => updateContent('siteName', e.target.value)}
+                        placeholder="Ex: TechSolutions"
+                        className="bg-muted/30"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Slogan / Headline</Label>
+                      <Input
+                        value={content.slogan}
+                        onChange={(e) => updateContent('slogan', e.target.value)}
+                        placeholder="Ex: Inovação para o seu futuro"
+                        className="bg-muted/30"
+                      />
+                    </div>
+                  </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Descrição e Serviços</CardTitle>
-                <CardDescription>Conte mais sobre seu negócio</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="description">Descrição da Empresa</Label>
-                  <Textarea
-                    id="description"
-                    value={content.description}
-                    onChange={(e) => updateContent('description', e.target.value)}
-                    placeholder="Descreva sua empresa, missão e valores..."
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="mainServices">Principais Serviços</Label>
-                  <Textarea
-                    id="mainServices"
-                    value={content.mainServices}
-                    onChange={(e) => updateContent('mainServices', e.target.value)}
-                    placeholder="Liste seus principais serviços ou produtos..."
-                    rows={3}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Informações Adicionais</CardTitle>
-                <CardDescription>Configurações extras e contato</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="contactInfo">Informações de Contato</Label>
+                  <div className="space-y-2">
+                    <Label>Descrição do Negócio</Label>
                     <Textarea
-                      id="contactInfo"
+                      value={content.description}
+                      onChange={(e) => updateContent('description', e.target.value)}
+                      placeholder="Descreva detalhadamente o que sua empresa faz..."
+                      className="min-h-[120px] bg-muted/30 resize-none"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle>Detalhes Específicos</CardTitle>
+                  <CardDescription>Informações para direcionar o conteúdo</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Público-Alvo</Label>
+                      <Input
+                        value={content.targetAudience}
+                        onChange={(e) => updateContent('targetAudience', e.target.value)}
+                        placeholder="Quem são seus clientes ideais?"
+                        className="bg-muted/30"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Estilo Desejado</Label>
+                      <Input
+                        value={content.style}
+                        onChange={(e) => updateContent('style', e.target.value)}
+                        placeholder="Ex: Minimalista, Corporativo, Criativo"
+                        className="bg-muted/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Principais Serviços/Produtos</Label>
+                    <Textarea
+                      value={content.mainServices}
+                      onChange={(e) => updateContent('mainServices', e.target.value)}
+                      placeholder="Liste o que você oferece..."
+                      className="min-h-[100px] bg-muted/30 resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Informações de Contato</Label>
+                    <Textarea
                       value={content.contactInfo}
                       onChange={(e) => updateContent('contactInfo', e.target.value)}
-                      placeholder="Email, telefone, endereço..."
-                      rows={2}
+                      placeholder="Endereço, telefones, emails, redes sociais..."
+                      className="min-h-[80px] bg-muted/30 resize-none"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="style">Estilo Desejado</Label>
-                    <Input
-                      id="style"
-                      value={content.style}
-                      onChange={(e) => updateContent('style', e.target.value)}
-                      placeholder="Ex: Moderno, Minimalista, Corporativo"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="additionalRequirements">Requisitos Especiais</Label>
-                  <Textarea
-                    id="additionalRequirements"
-                    value={content.additionalRequirements || ''}
-                    onChange={(e) => updateContent('additionalRequirements', e.target.value)}
-                    placeholder="Funcionalidades específicas, integrações, etc..."
-                    rows={2}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-        {/* Identidade Visual */}
-        <TabsContent value="branding">
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Logo */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icons.image className="h-5 w-5" />
-                  Logo da Empresa
-                </CardTitle>
-                <CardDescription>
-                  Upload do logo (PNG transparente recomendado)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {getImagesByPosition('logo').length > 0 ? (
-                    <div className="space-y-3">
-                      {getImagesByPosition('logo').map((logo) => (
-                        <div key={logo.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                          <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                            <img
-                              src={logo.url}
-                              alt="Logo"
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{logo.filename}</p>
-                            <Badge variant="default">Logo Atual</Badge>
-                          </div>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeImage(logo.id)}
-                          >
-                            <Icons.trash className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                      <div className="text-center">
-                        <Icons.upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <Label htmlFor="logo-upload" className="cursor-pointer">
-                          <span className="text-primary hover:underline">
-                            Clique para fazer upload do logo
-                          </span>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          PNG, SVG, JPG até 5MB
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => addNewImages(e.target.files, 'logo')}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Favicon */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icons.globe className="h-5 w-5" />
-                  Favicon
-                </CardTitle>
-                <CardDescription>
-                  Ícone do site (32x32px ou 16x16px recomendado)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {getImagesByPosition('favicon').length > 0 ? (
-                    <div className="space-y-3">
-                      {getImagesByPosition('favicon').map((favicon) => (
-                        <div key={favicon.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                          <div className="w-8 h-8 bg-muted rounded overflow-hidden flex-shrink-0">
-                            <img
-                              src={favicon.url}
-                              alt="Favicon"
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{favicon.filename}</p>
-                            <Badge variant="default">Favicon Atual</Badge>
-                          </div>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeImage(favicon.id)}
-                          >
-                            <Icons.trash className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                      <div className="text-center">
-                        <Icons.upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <Label htmlFor="favicon-upload" className="cursor-pointer">
-                          <span className="text-primary hover:underline">
-                            Clique para fazer upload do favicon
-                          </span>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          ICO, PNG até 1MB (32x32px ideal)
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  <input
-                    id="favicon-upload"
-                    type="file"
-                    accept="image/*,.ico"
-                    className="hidden"
-                    onChange={(e) => addNewImages(e.target.files, 'favicon')}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Cores */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Paleta de Cores</CardTitle>
-                <CardDescription>Cores da identidade visual</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="brandColors">Cores da Marca</Label>
-                    <Input
-                      id="brandColors"
-                      value={content.brandColors}
-                      onChange={(e) => updateContent('brandColors', e.target.value)}
-                      placeholder="Ex: #3B82F6, #1E40AF"
-                    />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Códigos hex das cores principais, separados por vírgula
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Imagens */}
-        <TabsContent value="images">
-          <div className="grid gap-6">
-            {/* Upload Geral */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icons.upload className="h-5 w-5" />
-                  Adicionar Imagens
-                </CardTitle>
-                <CardDescription>
-                  Faça upload de imagens para o seu projeto
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                    <div className="text-center">
-                      <Icons.upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <Label htmlFor="general-images" className="cursor-pointer">
-                        <span className="text-primary hover:underline">
-                          Clique para fazer upload
-                        </span>
-                        <span className="text-muted-foreground"> ou arraste e solte</span>
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        PNG, JPG até 5MB cada
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        💾 Imagens são enviadas automaticamente para o MinIO
-                      </p>
-                    <input
-                      id="general-images"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => addNewImages(e.target.files)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Lista de Imagens */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciar Imagens ({images.length})</CardTitle>
-                <CardDescription>
-                  Organize onde cada imagem deve aparecer
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {images.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Icons.image className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">Nenhuma imagem adicionada ainda</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {images.map((image) => (
-                      <div key={image.id} className="flex gap-4 p-4 border rounded-lg">
-                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                          <img
-                            src={image.url}
-                            alt="Preview"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-medium">{image.filename || 'Imagem'}</p>
-                              <p className="text-xs text-muted-foreground">ID: {image.id}</p>
+          {activeSection === 'branding' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="border-none shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Logo</CardTitle>
+                    <CardDescription>Formato PNG transparente (Recomendado)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {getImagesByPosition('logo').length > 0 ? (
+                        getImagesByPosition('logo').map((logo) => (
+                          <div key={logo.id} className="relative group border rounded-xl p-4 bg-muted/10">
+                            <div className="aspect-video flex items-center justify-center mb-3 cursor-pointer" onClick={() => setPreviewImage(logo.url)}>
+                              <img src={logo.url} alt="Logo" className="max-h-24 object-contain hover:scale-105 transition-transform" />
                             </div>
-                            <Badge variant={image.position === 'unassigned' ? 'secondary' : 'default'}>
-                              {imagePositions.find(p => p.value === image.position)?.label}
-                            </Badge>
+                            <div className="flex items-center justify-between">
+                              <Badge variant="secondary" className="text-xs">Logo Atual</Badge>
+                              <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => removeImage(logo.id)}>
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs text-muted-foreground">Posição:</Label>
-                            <Select
-                              value={image.position}
-                              onValueChange={(value: ImageWithPosition['position']) => 
-                                updateImagePosition(image.id, value)
-                              }
-                            >
-                              <SelectTrigger className="h-8 text-xs max-w-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {imagePositions.map(position => (
-                                  <SelectItem key={position.value} value={position.value}>
-                                    <div className="flex flex-col">
-                                      <span>{position.label}</span>
-                                      <span className="text-xs text-muted-foreground">
-                                        {position.description}
-                                      </span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(image.url, '_blank')}
-                            >
-                              <Icons.eye className="h-3 w-3 mr-1" />
-                              Visualizar
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeImage(image.id)}
-                            >
-                              <Icons.trash className="h-3 w-3 mr-1" />
-                              Remover
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                        ))
+                      ) : (
+                        <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                          <span className="text-sm font-medium">Clique para enviar logo</span>
+                          <span className="text-xs text-muted-foreground mt-1">PNG, SVG até 5MB</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => addNewImages(e.target.files, 'logo')} />
+                        </label>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                {/* Resumo */}
-                {images.length > 0 && (
-                  <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm font-medium mb-3">📊 Distribuição das Imagens:</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {imagePositions.map(position => {
-                        const count = images.filter(img => img.position === position.value).length
-                        return (
-                          <div key={position.value} className="text-center">
-                            <div className="text-2xl font-bold">{count}</div>
-                            <div className="text-xs text-muted-foreground">{position.label}</div>
+                <Card className="border-none shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Favicon</CardTitle>
+                    <CardDescription>Ícone do navegador (32x32px)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {getImagesByPosition('favicon').length > 0 ? (
+                        getImagesByPosition('favicon').map((favicon) => (
+                          <div key={favicon.id} className="relative group border rounded-xl p-4 bg-muted/10">
+                            <div className="aspect-video flex items-center justify-center mb-3 cursor-pointer" onClick={() => setPreviewImage(favicon.url)}>
+                              <img src={favicon.url} alt="Favicon" className="w-8 h-8 object-contain hover:scale-105 transition-transform" />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <Badge variant="secondary" className="text-xs">Favicon Atual</Badge>
+                              <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => removeImage(favicon.id)}>
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                        )
+                        ))
+                      ) : (
+                        <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-xl cursor-pointer hover:bg-muted/50 transition-colors">
+                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                          <span className="text-sm font-medium">Clique para enviar favicon</span>
+                          <span className="text-xs text-muted-foreground mt-1">ICO, PNG até 1MB</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => addNewImages(e.target.files, 'favicon')} />
+                        </label>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle>Cores da Marca</CardTitle>
+                  <CardDescription>Defina as cores principais da sua identidade visual</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Label>Códigos Hexadecimais</Label>
+                    <div className="flex gap-4">
+                      <Input
+                        value={content.brandColors}
+                        onChange={(e) => updateContent('brandColors', e.target.value)}
+                        placeholder="#000000, #FFFFFF"
+                        className="font-mono"
+                      />
+                    </div>
+                    <div className="flex gap-2 flex-wrap mt-2">
+                      {content.brandColors.split(',').map((color, i) => {
+                        const c = color.trim()
+                        return c.startsWith('#') && c.length >= 4 ? (
+                          <div key={i} className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg border">
+                            <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: c }} />
+                            <span className="text-xs font-mono">{c}</span>
+                          </div>
+                        ) : null
                       })}
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeSection === 'images' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-none shadow-sm bg-primary/5 border-primary/10">
+                <CardContent className="pt-6">
+                  <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-primary/20 rounded-xl cursor-pointer hover:bg-primary/10 transition-colors">
+                    <div className="bg-primary/10 p-3 rounded-full mb-3">
+                      <Upload className="h-6 w-6 text-primary" />
+                    </div>
+                    <span className="font-medium text-primary">Clique para adicionar novas imagens</span>
+                    <span className="text-xs text-muted-foreground mt-1">Suporta múltiplos arquivos (JPG, PNG)</span>
+                    <input type="file" className="hidden" multiple accept="image/*" onChange={(e) => addNewImages(e.target.files)} />
+                  </label>
+                </CardContent>
+              </Card>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                {images.filter(img => !['logo', 'favicon'].includes(img.position)).map((image) => (
+                  <Card key={image.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all group">
+                    <div className="relative aspect-video bg-muted cursor-pointer" onClick={() => setPreviewImage(image.url)}>
+                      <img src={image.url} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setPreviewImage(image.url); }}>
+                          <Eye className="h-4 w-4 mr-2" /> Ver
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); removeImage(image.id); }}>
+                          <Trash className="h-4 w-4 mr-2" /> Remover
+                        </Button>
+                      </div>
+                    </div>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium truncate max-w-[150px]">{image.filename}</span>
+                        <Badge variant="outline" className="font-normal">
+                          {imagePositions.find(p => p.value === image.position)?.icon}
+                        </Badge>
+                      </div>
+                      <Select
+                        value={image.position}
+                        onValueChange={(value: ImageWithPosition['position']) => updateImagePosition(image.id, value)}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Definir posição" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {imagePositions.filter(p => !['logo', 'favicon'].includes(p.value)).map(pos => (
+                            <SelectItem key={pos.value} value={pos.value}>
+                              <span className="mr-2">{pos.icon}</span>
+                              {pos.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {images.filter(img => !['logo', 'favicon'].includes(img.position)).length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>Nenhuma imagem na galeria</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl w-full p-0 overflow-hidden bg-transparent border-none shadow-none">
+          <DialogTitle className="sr-only">Visualização da Imagem</DialogTitle>
+          <div className="relative w-full h-full flex items-center justify-center">
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 z-50 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            {previewImage && (
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              />
+            )}
           </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+        </DialogContent>
+      </Dialog>
+    </div >
   )
 }
