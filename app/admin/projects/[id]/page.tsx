@@ -84,12 +84,9 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
   const [isSendingWebhook, setIsSendingWebhook] = useState(false)
   const [adminNotes, setAdminNotes] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("")
-
   const [processing, setProcessing] = useState<string | null>(null)
 
-
-
-  const fetchProject = useCallback(async (id: string) => {
+  const fetchProject = useCallback(async (id: string, showToast = false) => {
     try {
       const response = await fetch(`/api/admin/projects/${id}`)
       if (!response.ok) throw new Error('Projeto não encontrado')
@@ -97,6 +94,10 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
       const data = await response.json()
       setProject(data)
       setSelectedStatus(data.status)
+
+      if (showToast) {
+        toast.success("Dados atualizados com sucesso")
+      }
     } catch (error) {
       console.error('Erro ao carregar projeto:', error)
       toast.error("Erro ao carregar projeto")
@@ -324,6 +325,7 @@ export default function AdminProjectDetailPage({ params }: AdminProjectDetailPag
               onGenerateCopy={generateCopy}
               onUpdateStatus={updateProjectStatus}
               isUpdating={isUpdating}
+              onRefresh={() => fetchProject(project.id, true)}
             />
             <div className="h-[calc(100vh-200px)]">
               <PreviewPanel

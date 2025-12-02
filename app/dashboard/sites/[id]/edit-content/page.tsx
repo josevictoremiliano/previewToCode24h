@@ -32,6 +32,7 @@ interface ProjectContent {
   brandColors: string
   style: string
   additionalRequirements?: string
+  videoUrl?: string
 }
 
 interface Project {
@@ -55,6 +56,11 @@ interface Project {
     content?: {
       description?: string
       targetAudience?: string
+      mainServices?: string
+      contactInfo?: string
+      additionalRequirements?: string
+      videoUrl?: string
+      features?: string[]
     }
   }
 }
@@ -87,12 +93,14 @@ export default function EditProjectContent({ params }: Props) {
     contactInfo: '',
     brandColors: '',
     style: '',
-    additionalRequirements: ''
+    additionalRequirements: '',
+    videoUrl: ''
   })
   const [images, setImages] = useState<ImageWithPosition[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null)
+  const [hasVideoFeature, setHasVideoFeature] = useState(false)
 
   useEffect(() => {
     params.then(setResolvedParams)
@@ -105,6 +113,10 @@ export default function EditProjectContent({ params }: Props) {
 
       const projectData = await response.json()
       setProject(projectData)
+
+      // Check for video feature
+      const features = projectData.data?.content?.features || []
+      setHasVideoFeature(features.includes('video-hero') || features.includes('video'))
 
       if (projectData.briefing) {
         setContent(projectData.briefing)
@@ -121,7 +133,8 @@ export default function EditProjectContent({ params }: Props) {
               `${projectData.data.visualIdentity.primaryColor}${projectData.data.visualIdentity.secondaryColor ? `, ${projectData.data.visualIdentity.secondaryColor}` : ''}`
               : ''),
           style: projectData.data.visualIdentity?.style || '',
-          additionalRequirements: projectData.data.content?.additionalRequirements || ''
+          additionalRequirements: projectData.data.content?.additionalRequirements || '',
+          videoUrl: projectData.data.content?.videoUrl || ''
         })
       }
 
@@ -497,6 +510,34 @@ export default function EditProjectContent({ params }: Props) {
                       className="min-h-[80px] bg-muted/30 resize-none"
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>Requisitos Adicionais</Label>
+                    <Textarea
+                      value={content.additionalRequirements}
+                      onChange={(e) => updateContent('additionalRequirements', e.target.value)}
+                      placeholder="Algum outro detalhe importante?"
+                      className="min-h-[80px] bg-muted/30 resize-none"
+                    />
+                  </div>
+
+                  {(hasVideoFeature || !!content.videoUrl) && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Icons.video className="h-4 w-4" />
+                        Link do Vídeo (VSL)
+                      </Label>
+                      <Input
+                        value={content.videoUrl}
+                        onChange={(e) => updateContent('videoUrl', e.target.value)}
+                        placeholder="https://youtube.com/..."
+                        className="bg-muted/30"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Link para o vídeo que será exibido na seção Hero.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
