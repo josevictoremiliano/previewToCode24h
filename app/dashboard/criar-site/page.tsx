@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,6 +41,8 @@ export interface FormData {
     products: string[]
     cta: string
     sections: string[]
+    features: string[]
+    videoUrl?: string
   }
   // Passo 4 - Contato
   contact: {
@@ -59,11 +61,11 @@ export interface FormData {
   additionalResources: {
     images: {
       file: File
-      position: 'hero' | 'about' | 'credibility' | 'gallery' | 'unassigned'
+      position: 'hero' | 'about' | 'credibility' | 'gallery' | 'logo' | 'favicon' | 'unassigned'
       id: string
     }[]
     customTexts: string
-    features: string[]
+    aiGeneratedImages: boolean
   }
 }
 
@@ -87,7 +89,9 @@ const initialFormData: FormData = {
     targetAudience: "",
     products: [],
     cta: "",
-    sections: []
+    sections: [],
+    features: [],
+    videoUrl: ""
   },
   contact: {
     email: "",
@@ -104,7 +108,7 @@ const initialFormData: FormData = {
   additionalResources: {
     images: [],
     customTexts: "",
-    features: []
+    aiGeneratedImages: false
   }
 }
 
@@ -117,6 +121,49 @@ const steps = [
   { id: 6, title: "Revisão", description: "Confirmar e enviar" }
 ]
 
+const siteTypeDefaults: Record<string, { sections: string[], features: string[] }> = {
+  "produto": {
+    sections: ["hero", "beneficios", "galeria", "depoimentos", "faq", "urgencia"],
+    features: ["testimonials", "video-hero"]
+  },
+  "servico": {
+    sections: ["hero", "beneficios", "como-funciona", "depoimentos", "faq", "urgencia"],
+    features: ["whatsapp-chat", "testimonials"]
+  },
+  "evento": {
+    sections: ["hero", "sobre", "localizacao", "faq", "urgencia"],
+    features: ["countdown-timer"]
+  },
+  "captura": {
+    sections: ["hero", "beneficios", "sobre"],
+    features: ["lead-form", "popup-exit"]
+  },
+  "vendas": {
+    sections: ["hero", "beneficios", "depoimentos", "garantia", "faq", "urgencia"],
+    features: ["countdown-timer", "whatsapp-chat", "pricing-table"]
+  },
+  "lancamento": {
+    sections: ["hero", "sobre", "beneficios", "urgencia"],
+    features: ["countdown-timer", "lead-form"]
+  },
+  "promocional": {
+    sections: ["hero", "beneficios", "galeria", "urgencia"],
+    features: ["countdown-timer", "popup-exit"]
+  },
+  "curso": {
+    sections: ["hero", "beneficios", "como-funciona", "sobre", "depoimentos", "faq", "precos", "urgencia"],
+    features: ["video-hero", "testimonials", "pricing-table"]
+  },
+  "aplicativo": {
+    sections: ["hero", "beneficios", "como-funciona", "depoimentos", "faq", "urgencia"],
+    features: ["video-hero", "testimonials"]
+  },
+  "empresa": {
+    sections: ["hero", "sobre", "beneficios", "localizacao"],
+    features: ["whatsapp-chat"]
+  }
+}
+
 export default function CriarSitePage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<FormData>(initialFormData)
@@ -125,7 +172,24 @@ export default function CriarSitePage() {
   const router = useRouter()
 
   const updateFormData = (stepData: Partial<FormData>) => {
-    setFormData(prev => ({ ...prev, ...stepData }))
+    setFormData(prev => {
+      const newData = { ...prev, ...stepData }
+
+      // Se o tipo de site mudou, aplicar defaults
+      if (stepData.basicInfo?.siteType && stepData.basicInfo.siteType !== prev.basicInfo.siteType) {
+        const defaults = siteTypeDefaults[stepData.basicInfo.siteType]
+        if (defaults) {
+          newData.content = {
+            ...newData.content,
+            sections: defaults.sections,
+            features: defaults.features
+          }
+          toast.info("Seções e funcionalidades sugeridas foram pré-selecionadas.")
+        }
+      }
+
+      return newData
+    })
   }
 
   const goToNext = () => {
@@ -178,7 +242,10 @@ export default function CriarSitePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               images: imagesBase64,
-              projectId: projectId
+              projectId: projectId,
+              userId: session.user.id,
+              projectName: formData.basicInfo.siteName,
+              createdAt: new Date().toISOString()
             })
           })
 
@@ -215,38 +282,12 @@ export default function CriarSitePage() {
         console.log('📸 Nenhuma imagem para processar')
       }
 
-      // 1.5 Processar Logo se houver
+      // Tentar encontrar o logo nas imagens processadas
       let logoUrl = formData.visualIdentity.logoUrl
-      if (formData.visualIdentity.logoFile) {
-        console.log('📸 Processando Logo...')
-        try {
-          const reader = new FileReader()
-          const logoBase64 = await new Promise<string>((resolve, reject) => {
-            reader.onload = () => resolve(reader.result as string)
-            reader.onerror = () => reject(new Error('Erro ao ler logo'))
-            reader.readAsDataURL(formData.visualIdentity.logoFile!)
-          })
-
-          const uploadResponse = await fetch("/api/upload-images", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              images: [logoBase64],
-              projectId: projectId
-            })
-          })
-
-          if (!uploadResponse.ok) throw new Error('Erro ao fazer upload do logo')
-
-          const uploadResult = await uploadResponse.json()
-          if (uploadResult.successful && uploadResult.successful.length > 0) {
-            logoUrl = uploadResult.successful[0].url
-            console.log('✅ Logo enviado:', logoUrl)
-          }
-        } catch (logoError) {
-          console.error('❌ Erro no upload do logo:', logoError)
-          toast.error("Erro ao enviar logo, usando URL temporária")
-        }
+      const logoImage = processedImages.find(img => img.position === 'logo')
+      if (logoImage) {
+        logoUrl = logoImage.url
+        console.log('✅ Logo identificado nas imagens adicionais:', logoUrl)
       }
 
       // 2. Preparar dados do projeto
@@ -255,7 +296,7 @@ export default function CriarSitePage() {
         projectId: projectId,
         basicInfo: formData.basicInfo,
         visualIdentity: {
-          logoUrl: logoUrl, // Usar URL processada
+          logoUrl: logoUrl, // Usar URL processada ou existente
           primaryColor: formData.visualIdentity.primaryColor,
           secondaryColor: formData.visualIdentity.secondaryColor,
           style: formData.visualIdentity.style,
@@ -266,7 +307,8 @@ export default function CriarSitePage() {
         additionalResources: {
           images: processedImages,
           customTexts: formData.additionalResources.customTexts,
-          features: formData.additionalResources.features
+          features: formData.content.features, // Usar features do content
+          aiGeneratedImages: formData.additionalResources.aiGeneratedImages
         },
         timestamp: new Date().toISOString()
       }
@@ -343,6 +385,7 @@ export default function CriarSitePage() {
         return (
           <RecursosAdicionais
             data={formData.additionalResources}
+            selectedSections={formData.content.sections}
             onUpdate={(data) => updateFormData({ additionalResources: data })}
             onNext={goToNext}
             onPrevious={goToPrevious}

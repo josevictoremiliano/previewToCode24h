@@ -16,6 +16,8 @@ interface Content {
   products: string[]
   cta: string
   sections: string[]
+  features: string[]
+  videoUrl?: string
 }
 
 interface Props {
@@ -34,6 +36,20 @@ const availableSections = [
   { id: "faq", label: "FAQ", description: "Dúvidas frequentes" },
   { id: "garantia", label: "Garantia", description: "Política de satisfação" },
   { id: "urgencia", label: "Urgência", description: "Ofertas por tempo limitado" },
+  { id: "sobre", label: "Sobre Nós", description: "História e credibilidade da empresa" },
+  { id: "galeria", label: "Galeria", description: "Fotos de produtos ou resultados" },
+  { id: "localizacao", label: "Localização", description: "Mapa e endereço físico" },
+]
+
+const availableFeatures = [
+  { id: "lead-form", label: "Formulário de Captura", description: "Coleta emails e dados de prospects" },
+  { id: "countdown-timer", label: "Timer de Urgência", description: "Conta regressiva para ofertas" },
+  { id: "whatsapp-chat", label: "Chat WhatsApp", description: "Atendimento direto via WhatsApp" },
+  { id: "testimonials", label: "Depoimentos", description: "Prova social com feedbacks" },
+  { id: "pricing-table", label: "Tabela de Preços", description: "Comparação de planos/produtos" },
+  { id: "video-hero", label: "Vídeo de Apresentação", description: "Player de vídeo na hero section" },
+  { id: "popup-exit", label: "Pop-up de Saída", description: "Oferta quando usuário tenta sair" },
+  { id: "progress-bar", label: "Barra de Progresso", description: "Passos do processo de compra" },
 ]
 
 const ctaOptions = [
@@ -79,9 +95,16 @@ export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
     handleChange("sections", sections)
   }
 
+  const toggleFeature = (featureId: string) => {
+    const features = (formData.features || []).includes(featureId)
+      ? (formData.features || []).filter(f => f !== featureId)
+      : [...(formData.features || []), featureId]
+    handleChange("features", features)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.description.trim()) {
       toast.error("Proposta de valor é obrigatória")
       return
@@ -101,7 +124,7 @@ export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
           Defina o conteúdo persuasivo da sua landing page
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -141,7 +164,7 @@ export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
                 <Icons.plus className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {formData.products.length > 0 && (
               <div className="space-y-2">
                 {formData.products.map((product, index) => (
@@ -206,6 +229,55 @@ export function Conteudo({ data, onUpdate, onNext, onPrevious }: Props) {
               ))}
             </div>
           </div>
+
+          <div className="space-y-3">
+            <Label>Funcionalidades Especiais (Opcional)</Label>
+            <div className="grid gap-3 md:grid-cols-2">
+              {availableFeatures.map((feature) => (
+                <div
+                  key={feature.id}
+                  className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <Checkbox
+                    id={feature.id}
+                    checked={(formData.features || []).includes(feature.id)}
+                    onCheckedChange={() => toggleFeature(feature.id)}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <Label
+                      htmlFor={feature.id}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {feature.label}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Campo de URL do Vídeo - Aparece apenas se "video-hero" estiver selecionado */}
+          {(formData.features || []).includes("video-hero") && (
+            <div className="space-y-2 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+              <Label htmlFor="videoUrl" className="flex items-center gap-2 text-blue-800">
+                <Icons.video className="h-4 w-4" />
+                URL do Vídeo (YouTube ou Vimeo)
+              </Label>
+              <Input
+                id="videoUrl"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={formData.videoUrl || ""}
+                onChange={(e) => handleChange("videoUrl", e.target.value)}
+                className="bg-white"
+              />
+              <p className="text-xs text-blue-600">
+                Cole o link do vídeo que será exibido na seção Hero do seu site.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-between pt-6">
             <Button type="button" variant="outline" onClick={onPrevious}>

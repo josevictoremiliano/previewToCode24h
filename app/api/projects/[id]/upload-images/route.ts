@@ -6,11 +6,11 @@ const prisma = new PrismaClient();
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
-    
+    const { id } = await params;
+
     // Buscar o projeto
     const project = await prisma.project.findUnique({
       where: { id },
@@ -27,7 +27,7 @@ export async function POST(
     console.log('🚀 Iniciando processamento de imagens para projeto:', project.name);
 
     // Processar e fazer upload das imagens
-    const updatedData = await processProjectImages(project.data);
+    const updatedData = await processProjectImages(project.data, project);
 
     // Atualizar o projeto no banco com as novas URLs
     const updatedProject = await prisma.project.update({
@@ -51,11 +51,11 @@ export async function POST(
 
   } catch (error) {
     console.error('❌ Erro ao processar imagens:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Erro interno do servidor',
-        details: error.message 
+        details: error.message
       },
       { status: 500 }
     );

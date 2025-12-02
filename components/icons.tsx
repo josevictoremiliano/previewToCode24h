@@ -79,7 +79,9 @@ import {
   Folder,
   PlusCircle,
   Tag,
+  Paperclip,
   type LucideIcon,
+  Video,
 } from "lucide-react"
 
 export type Icon = LucideIcon
@@ -184,4 +186,6 @@ export const Icons = {
   code: Code,
   image: Image,
   tag: Tag,
+  paperclip: Paperclip,
+  video: Video,
 }

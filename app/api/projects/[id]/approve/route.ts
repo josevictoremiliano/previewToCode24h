@@ -12,7 +12,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     // Verificar se é um admin (para aprovação inicial) ou usuário (para aprovação final)
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -57,7 +57,7 @@ export async function POST(
       // 1. Atualizar status para PROCESSING
       await prisma.project.update({
         where: { id },
-        data: { 
+        data: {
           status: 'PROCESSING',
           updatedAt: new Date()
         }
@@ -70,13 +70,13 @@ export async function POST(
 
       try {
         console.log('🖼️ Processando imagens...')
-        updatedProjectData = await processProjectImages(project.data)
-        
+        updatedProjectData = await processProjectImages(project.data, project)
+
         await prisma.project.update({
           where: { id },
           data: { data: updatedProjectData }
         })
-        
+
         console.log('✅ Imagens processadas e salvas')
       } catch (imageError) {
         console.warn('⚠️ Erro ao processar imagens:', imageError.message)
@@ -85,7 +85,7 @@ export async function POST(
       // 3. Gerar HTML com a IA
       try {
         console.log('🤖 Gerando HTML com IA...')
-        
+
         const htmlContent = await generateHtmlForProject({
           ...project,
           data: updatedProjectData
@@ -134,11 +134,11 @@ export async function POST(
 
       } catch (aiError) {
         console.error('❌ Erro na geração de HTML:', aiError)
-        
+
         // Reverter status para PENDING em caso de erro
         await prisma.project.update({
           where: { id },
-          data: { 
+          data: {
             status: 'PENDING',
             updatedAt: new Date()
           }

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
         }
 
         const data = await req.json()
-        const { subject, description, priority } = data
+        const { subject, description, priority, attachments } = data
 
         if (!subject || !description) {
             return new NextResponse("Subject and description are required", { status: 400 })
@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
         // Gerar protocolo único
         const protocol = await generateTicketProtocol()
 
+        // Criar ticket e a primeira mensagem com anexos (se houver)
         const ticket = await prisma.ticket.create({
             data: {
                 protocol,
@@ -29,7 +30,27 @@ export async function POST(req: NextRequest) {
                 description,
                 priority: priority || "MEDIUM",
                 userId: session.user.id,
+                messages: {
+                    create: {
+                        content: description,
+                        userId: session.user.id,
+                        attachments: attachments && attachments.length > 0 ? {
+                            create: attachments.map((att: any) => ({
+                                url: att.url,
+                                filename: att.filename,
+                                type: att.type
+                            }))
+                        } : undefined
+                    }
+                }
             },
+            include: {
+                messages: {
+                    include: {
+                        attachments: true
+                    }
+                }
+            }
         })
 
         return NextResponse.json(ticket)

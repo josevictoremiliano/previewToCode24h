@@ -26,6 +26,7 @@ model User {
   role          UserRole  @default(USER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  storagePath   String?   @unique // UUID para pasta de armazenamento (segurança)
 
   accounts         Account[]
   sessions         Session[]
@@ -33,7 +34,7 @@ model User {
   notifications    Notification[]
   apiKeys          ApiKey[]
   chatMessages     ChatMessage[]
-  adminAssignments Project[] @relation("AdminAssignments")
+  adminAssignments Project[]        @relation("AdminAssignments")
   aiConfigs        AiConfig[]
   promptTemplates  PromptTemplate[]
   aiUsageLogs      AiUsageLog[]
@@ -58,7 +59,7 @@ model Ticket {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  messages    TicketMessage[]
+  messages TicketMessage[]
 
   @@map("tickets")
 }
@@ -72,20 +73,20 @@ model TicketMessage {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
-  
+
   attachments TicketAttachment[]
 
   @@map("ticket_messages")
 }
 
 model TicketAttachment {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   url       String
   filename  String
-  type      String   // image, pdf, etc
+  type      String // image, pdf, etc
   messageId String
   message   TicketMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 
   @@map("ticket_attachments")
 }
@@ -132,26 +133,26 @@ model VerificationToken {
 
 // Modelo de projeto/site
 model Project {
-  id          String        @id @default(cuid())
-  name        String
-  data        Json
-  status      ProjectStatus @default(PENDING)
-  previewUrl  String?
-  publishUrl  String?
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  name            String
+  data            Json
+  status          ProjectStatus @default(PENDING)
+  previewUrl      String?
+  publishUrl      String?
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignedAdminId String?
-  assignedAdmin   User?     @relation("AdminAssignments", fields: [assignedAdminId], references: [id])
-  
+  assignedAdmin   User?         @relation("AdminAssignments", fields: [assignedAdminId], references: [id])
+
   // Novos campos para workflow de copy e HTML
-  copy         String?      @db.Text // Copy gerada pela IA
-  copyFeedback String?      @db.Text // Feedback para revisão da copy
-  htmlContent  String?      @db.Text // HTML gerado
-  htmlFeedback String?      @db.Text // Feedback para revisão do HTML
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  cancelledAt DateTime?
+  copy         String? @db.Text // Copy gerada pela IA
+  copyFeedback String? @db.Text // Feedback para revisão da copy
+  htmlContent  String? @db.Text // HTML gerado
+  htmlFeedback String? @db.Text // Feedback para revisão do HTML
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  cancelledAt  DateTime?
   cancelReason String?
 
   notifications Notification[]
@@ -165,39 +166,39 @@ model Project {
 
 // Modelo para briefing estruturado
 model Briefing {
-  id                    String   @id @default(cuid())
-  projectId             String   @unique
-  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  siteName              String
-  businessType          String
-  description           String   @db.Text
-  targetAudience        String
-  mainServices          String   @db.Text
-  contactInfo           String   @db.Text
-  brandColors           String
-  style                 String
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  siteName               String
+  businessType           String
+  description            String  @db.Text
+  targetAudience         String
+  mainServices           String  @db.Text
+  contactInfo            String  @db.Text
+  brandColors            String
+  style                  String
   additionalRequirements String? @db.Text
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("briefings")
 }
 
 enum ProjectStatus {
-  PENDING        // Aguardando aprovação do admin
-  PROCESSING     // Sendo processado pela IA
-  COPY_READY     // Copy foi gerada e aprovada
-  COPY_REVISION  // Copy precisa de revisão
-  HTML_READY     // HTML foi gerado e aprovado pelo admin
-  HTML_REVISION  // HTML precisa de revisão
-  PREVIEW        // Aguardando aprovação do cliente
-  APPROVED       // Aprovado pelo cliente
-  REVISION       // Cliente solicitou revisão
-  COMPLETED      // Finalizado
-  PUBLISHED      // Publicado
-  CANCELLED      // Cancelado
+  PENDING // Aguardando aprovação do admin
+  PROCESSING // Sendo processado pela IA
+  COPY_READY // Copy foi gerada e aprovada
+  COPY_REVISION // Copy precisa de revisão
+  HTML_READY // HTML foi gerado e aprovado pelo admin
+  HTML_REVISION // HTML precisa de revisão
+  PREVIEW // Aguardando aprovação do cliente
+  APPROVED // Aprovado pelo cliente
+  REVISION // Cliente solicitou revisão
+  COMPLETED // Finalizado
+  PUBLISHED // Publicado
+  CANCELLED // Cancelado
 }
 
 // Modelo de notificações
@@ -220,69 +221,69 @@ model Notification {
 
 // Modelo de API Keys
 model ApiKey {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
-  keyHash     String   @unique
+  keyHash     String    @unique
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  permissions String[] @default(["read", "write"])
-  isActive    Boolean  @default(true)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissions String[]  @default(["read", "write"])
+  isActive    Boolean   @default(true)
   expiresAt   DateTime?
   lastUsedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("api_keys")
 }
 
 model ChatMessage {
-  id        String   @id @default(cuid())
-  content   String
-  isFromAdmin Boolean @default(false)
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  readAt    DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(cuid())
+  content     String
+  isFromAdmin Boolean   @default(false)
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("chat_messages")
 }
 
 // Modelo para configurações de IA
 model AiConfig {
-  id            String   @id @default(cuid())
-  provider      String   // "groq", "openai", "anthropic", etc.
-  apiKey        String   // Chave API criptografada
-  model         String   // Nome do modelo (ex: "llama3-70b", "gpt-4", etc.)
-  isActive      Boolean  @default(true)
-  maxTokens     Int      @default(4000)
-  temperature   Float    @default(0.7)
-  description   String?  // Descrição opcional
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  createdById   String
-  createdBy     User     @relation(fields: [createdById], references: [id])
-  usageLogs     AiUsageLog[]
+  id          String       @id @default(cuid())
+  provider    String // "groq", "openai", "anthropic", etc.
+  apiKey      String // Chave API criptografada
+  model       String // Nome do modelo (ex: "llama3-70b", "gpt-4", etc.)
+  isActive    Boolean      @default(true)
+  maxTokens   Int          @default(4000)
+  temperature Float        @default(0.7)
+  description String? // Descrição opcional
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdById String
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  usageLogs   AiUsageLog[]
 
   @@map("ai_configs")
 }
 
 // Modelo para templates de prompts
 model PromptTemplate {
-  id          String   @id @default(cuid())
-  name        String   // Nome do template (ex: "Criação de copy", "Criação de HTML")
-  key         String   @unique // Chave única (ex: "copy_creation", "html_creation")
-  prompt      String   @db.Text // Template do prompt com variáveis
-  description String?  // Descrição do que faz
-  category    String   @default("general") // Categoria (copy, html, seo, etc.)
-  isActive    Boolean  @default(true)
-  variables   Json     // Array de variáveis esperadas
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          String       @id @default(cuid())
+  name        String // Nome do template (ex: "Criação de copy", "Criação de HTML")
+  key         String       @unique // Chave única (ex: "copy_creation", "html_creation")
+  prompt      String       @db.Text // Template do prompt com variáveis
+  description String? // Descrição do que faz
+  category    String       @default("general") // Categoria (copy, html, seo, etc.)
+  isActive    Boolean      @default(true)
+  variables   Json // Array de variáveis esperadas
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdBy   User         @relation(fields: [createdById], references: [id])
   usageLogs   AiUsageLog[]
 
   @@map("prompt_templates")
@@ -290,23 +291,23 @@ model PromptTemplate {
 
 // Modelo para histórico de uso de IA
 model AiUsageLog {
-  id            String   @id @default(cuid())
-  configId      String
-  config        AiConfig @relation(fields: [configId], references: [id])
-  promptId      String?
-  prompt        PromptTemplate? @relation(fields: [promptId], references: [id])
-  projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
-  inputTokens   Int?
-  outputTokens  Int?
-  totalTokens   Int?
-  cost          Float?   // Custo estimado
-  responseTime  Int?     // Tempo de resposta em ms
-  success       Boolean  @default(true)
-  errorMessage  String?
-  createdAt     DateTime @default(now())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
+  id           String          @id @default(cuid())
+  configId     String
+  config       AiConfig        @relation(fields: [configId], references: [id])
+  promptId     String?
+  prompt       PromptTemplate? @relation(fields: [promptId], references: [id])
+  projectId    String?
+  project      Project?        @relation(fields: [projectId], references: [id])
+  inputTokens  Int?
+  outputTokens Int?
+  totalTokens  Int?
+  cost         Float? // Custo estimado
+  responseTime Int? // Tempo de resposta em ms
+  success      Boolean         @default(true)
+  errorMessage String?
+  createdAt    DateTime        @default(now())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id])
 
   @@map("ai_usage_logs")
 }
@@ -318,9 +319,9 @@ model ProjectLog {
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId      String
   user        User     @relation(fields: [userId], references: [id])
-  action      String   // Tipo de ação: 'COPY_GENERATED', 'COPY_EDITED', 'HTML_GENERATED', etc
-  description String   // Descrição detalhada da ação
-  metadata    Json?    // Dados adicionais sobre a ação
+  action      String // Tipo de ação: 'COPY_GENERATED', 'COPY_EDITED', 'HTML_GENERATED', etc
+  description String // Descrição detalhada da ação
+  metadata    Json? // Dados adicionais sobre a ação
   createdAt   DateTime @default(now())
 
   @@map("project_logs")
@@ -330,10 +331,10 @@ model ProjectLog {
 model SystemConfig {
   id          String   @id @default(cuid())
   key         String   @unique // Chave única (ex: "minio_endpoint", "smtp_host")
-  value       String?  // Valor da configuração (criptografado se necessário)
+  value       String? // Valor da configuração (criptografado se necessário)
   encrypted   Boolean  @default(false) // Se o valor está criptografado
   category    String   @default("general") // Categoria (minio, smtp, ai, general)
-  description String?  // Descrição da configuração
+  description String? // Descrição da configuração
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

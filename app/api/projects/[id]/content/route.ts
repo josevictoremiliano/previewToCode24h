@@ -16,6 +16,7 @@ interface ProjectContent {
   style: string
   additionalRequirements?: string
   logoUrl?: string
+  faviconUrl?: string
 }
 
 export async function PATCH(
@@ -77,7 +78,8 @@ export async function PATCH(
         ...(currentData.visualIdentity || {}),
         brandColors: content.brandColors,
         style: content.style,
-        logoUrl: content.logoUrl
+        logoUrl: content.logoUrl,
+        faviconUrl: content.faviconUrl
       }
     }
 

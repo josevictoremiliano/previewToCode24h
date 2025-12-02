@@ -15,6 +15,7 @@ const projectSchema = z.object({
   }),
   visualIdentity: z.object({
     logoUrl: z.string().optional(),
+    faviconUrl: z.string().optional(),
     primaryColor: z.string(),
     secondaryColor: z.string(),
     style: z.string().optional(),
@@ -55,7 +56,7 @@ const projectSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Não autorizado' },
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    
+
     // Validação dos dados
     const data = projectSchema.parse(body)
 
@@ -173,17 +174,17 @@ export async function POST(request: NextRequest) {
     try {
       // Importar função de processamento (dynamic import para evitar problemas de build)
       const { processProjectWithAI } = await import('@/lib/ai-processor')
-      
+
       // Processar em background para não bloquear a resposta
-      processProjectWithAI(data, project.id).catch(error => {
+      processProjectWithAI(data, project.id, session.user.id).catch(error => {
         console.error('Erro no processamento em background:', error)
         // Erro já é tratado dentro da função processProjectWithAI
       })
-      
+
     } catch (processingError) {
       console.error("Erro ao iniciar processamento:", processingError)
       // Não falhar a requisição se o processamento falhar ao iniciar
-      
+
       // Notificar que o processamento será manual
       await prisma.notification.create({
         data: {
@@ -198,14 +199,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
+      {
         project: {
           id: project.id,
           siteName: project.name,
           status: project.status,
           createdAt: project.createdAt,
         },
-        message: "Projeto criado com sucesso!" 
+        message: "Projeto criado com sucesso!"
       },
       { status: 201 }
     )

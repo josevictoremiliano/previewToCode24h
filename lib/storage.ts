@@ -1,6 +1,10 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getMinIOConfig } from '@/lib/system-config';
+import { prisma } from '@/lib/prisma';
+import sharp from 'sharp';
+import { format } from 'date-fns';
+import { randomUUID } from 'crypto';
 
 let cachedMinIOConfig: any = null;
 let configCacheTime = 0;
@@ -9,7 +13,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 // Busca configuração do MinIO do banco de dados
 async function getMinIOConfigFromDB() {
   const now = Date.now();
-  
+
   // Cache da configuração por 5 minutos
   if (cachedMinIOConfig && (now - configCacheTime) < CACHE_DURATION) {
     return cachedMinIOConfig;
@@ -17,7 +21,7 @@ async function getMinIOConfigFromDB() {
 
   try {
     const config = await getMinIOConfig();
-    
+
     cachedMinIOConfig = {
       endpoint: config.minio_endpoint || process.env.MINIO_ENDPOINT || 'https://minio-rg4c04cc4k4c040ckckkk88c.painel.jotav.me',
       region: config.minio_region || process.env.MINIO_REGION || 'us-east-1',
@@ -28,12 +32,12 @@ async function getMinIOConfigFromDB() {
       forcePathStyle: true, // Necessário para MinIO
       bucket: config.minio_bucket || process.env.MINIO_BUCKET || 'seusiteem24h'
     };
-    
+
     configCacheTime = now;
     return cachedMinIOConfig;
   } catch (error) {
     console.error('❌ Erro ao buscar configuração MinIO do banco:', error);
-    
+
     // Fallback para variáveis de ambiente
     return {
       endpoint: process.env.MINIO_ENDPOINT || 'https://minio-rg4c04cc4k4c040ckckkk88c.painel.jotav.me',
@@ -64,7 +68,7 @@ export async function uploadFile(
 ): Promise<UploadResult> {
   try {
     const config = await getMinIOConfigFromDB();
-    
+
     // Criar cliente S3 com configuração dinâmica
     const s3Client = new S3Client({
       endpoint: config.endpoint,
@@ -98,33 +102,24 @@ export async function uploadFile(
 }
 
 /**
- * Faz upload de imagem a partir de uma blob URL ou base64
+ * Faz upload de uma imagem genérica (base64 ou URL) para um caminho específico
  */
-export async function uploadImage(
+export async function uploadGenericImage(
   imageData: string,
-  projectId: string,
-  imageName?: string
+  keyWithoutExtension: string
 ): Promise<UploadResult> {
   try {
     let buffer: Buffer;
     let contentType: string;
-    
+
     if (imageData.startsWith('data:')) {
-      // Base64 image
       const matches = imageData.match(/^data:([^;]+);base64,(.+)$/);
-      if (!matches) {
-        throw new Error('Formato base64 inválido');
-      }
-      
+      if (!matches) throw new Error('Formato base64 inválido');
       contentType = matches[1];
       buffer = Buffer.from(matches[2], 'base64');
     } else if (imageData.startsWith('blob:') || imageData.startsWith('http')) {
-      // Fetch da URL
       const response = await fetch(imageData);
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar imagem: ${response.statusText}`);
-      }
-      
+      if (!response.ok) throw new Error(`Erro ao buscar imagem: ${response.statusText}`);
       const arrayBuffer = await response.arrayBuffer();
       buffer = Buffer.from(arrayBuffer);
       contentType = response.headers.get('content-type') || 'image/jpeg';
@@ -132,16 +127,84 @@ export async function uploadImage(
       throw new Error('Formato de imagem não suportado');
     }
 
-    // Gerar nome único para o arquivo
-    const timestamp = Date.now();
-    const extension = contentType.split('/')[1] || 'jpg';
-    const fileName = imageName || `image-${timestamp}`;
-    const key = `projects/${projectId}/images/${fileName}.${extension}`;
-
-    return await uploadFile(buffer, key, contentType);
+    // Upload direto sem conversão (para uso genérico)
+    return uploadFile(buffer, keyWithoutExtension, contentType);
   } catch (error) {
-    console.error('Erro ao fazer upload da imagem:', error);
-    throw new Error(`Falha no upload da imagem: ${error.message}`);
+    console.error('Erro em uploadGenericImage:', error);
+    throw error;
+  }
+}
+
+/**
+ * Faz upload de imagem a partir de uma blob URL ou base64
+ * Converte para WebP e organiza em pastas específicas
+ */
+export async function uploadImage(
+  imageData: string,
+  projectId: string,
+  imageName: string = 'image',
+  projectContext?: { userId: string; name: string; createdAt: Date | string }
+): Promise<UploadResult> {
+  try {
+    // 1. Obter dados do projeto
+    let project = projectContext;
+    if (!project) {
+      const p = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { userId: true, name: true, createdAt: true }
+      });
+      if (!p) throw new Error(`Projeto não encontrado: ${projectId}`);
+      project = p;
+    }
+
+    // 2. Converter imagem para Buffer
+    let buffer: Buffer;
+    if (imageData.startsWith('data:')) {
+      const matches = imageData.match(/^data:([^;]+);base64,(.+)$/);
+      if (!matches) throw new Error('Formato base64 inválido');
+      buffer = Buffer.from(matches[2], 'base64');
+    } else if (imageData.startsWith('http') || imageData.startsWith('blob:')) {
+      const response = await fetch(imageData);
+      if (!response.ok) throw new Error(`Erro ao buscar imagem: ${response.statusText}`);
+      const arrayBuffer = await response.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+    } else {
+      throw new Error('Formato de imagem não suportado');
+    }
+
+    // 3. Converter para WebP usando Sharp
+    const webpBuffer = await sharp(buffer)
+      .webp({ quality: 80 })
+      .toBuffer();
+
+    // 4. Construir caminho do arquivo
+    // Folder: userID/ProjetoName_DiaDeCriação/fotos/
+    // File: DataDeUploadProjetoName0001.webp
+
+    const createdAtDate = new Date(project.createdAt);
+    const creationDateStr = format(createdAtDate, 'ddMMyyyy');
+    const uploadDateStr = format(new Date(), 'ddMMyyyy');
+    const safeProjectName = project.name.replace(/[^a-zA-Z0-9]/g, '');
+
+    let fileName = '';
+    if (imageName === 'logo') {
+      fileName = `${uploadDateStr}${safeProjectName}_logo.webp`;
+    } else {
+      // Tenta extrair índice se for algo como "additional-0"
+      const match = imageName.match(/additional-(\d+)/);
+      const index = match ? parseInt(match[1]) + 1 : 1;
+      const sequence = index.toString().padStart(4, '0');
+      fileName = `${uploadDateStr}${safeProjectName}${sequence}.webp`;
+    }
+
+    const key = `${project.userId}/${safeProjectName}_${creationDateStr}/fotos/${fileName}`;
+
+    // 5. Upload
+    return uploadFile(webpBuffer, key, 'image/webp');
+
+  } catch (error) {
+    console.error('Erro em uploadImage:', error);
+    throw error;
   }
 }
 
@@ -150,8 +213,16 @@ export async function uploadImage(
  */
 export async function generateSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
   try {
+    const config = await getMinIOConfigFromDB();
+    const s3Client = new S3Client({
+      endpoint: config.endpoint,
+      region: config.region,
+      credentials: config.credentials,
+      forcePathStyle: config.forcePathStyle
+    });
+
     const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: config.bucket,
       Key: key,
     });
 
@@ -159,7 +230,7 @@ export async function generateSignedUrl(key: string, expiresIn: number = 3600): 
     return signedUrl;
   } catch (error) {
     console.error('Erro ao gerar URL assinada:', error);
-    throw new Error(`Falha ao gerar URL: ${error.message}`);
+    throw new Error(`Falha ao gerar URL: ${(error as Error).message}`);
   }
 }
 
@@ -168,8 +239,16 @@ export async function generateSignedUrl(key: string, expiresIn: number = 3600): 
  */
 export async function fileExists(key: string): Promise<boolean> {
   try {
+    const config = await getMinIOConfigFromDB();
+    const s3Client = new S3Client({
+      endpoint: config.endpoint,
+      region: config.region,
+      credentials: config.credentials,
+      forcePathStyle: config.forcePathStyle
+    });
+
     await s3Client.send(new HeadObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: config.bucket,
       Key: key,
     }));
     return true;
@@ -181,21 +260,34 @@ export async function fileExists(key: string): Promise<boolean> {
 /**
  * Processa todas as imagens de um projeto e faz upload
  */
-export async function processProjectImages(projectData: any): Promise<any> {
+export async function processProjectImages(
+  projectData: any,
+  projectContext?: { userId: string; name: string; createdAt: Date }
+): Promise<any> {
   try {
     const updatedData = { ...projectData };
     const projectId = updatedData.projectId || 'unknown';
-    
+
+    // Se não tiver contexto e tiver projectId, buscar contexto uma vez
+    if (!projectContext && projectId !== 'unknown') {
+      const p = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { userId: true, name: true, createdAt: true }
+      });
+      if (p) projectContext = p;
+    }
+
     // Processar logo na visualIdentity
-    if (updatedData.visualIdentity?.logoUrl && 
-        (updatedData.visualIdentity.logoUrl.startsWith('blob:') || 
-         updatedData.visualIdentity.logoUrl.startsWith('data:'))) {
-      
+    if (updatedData.visualIdentity?.logoUrl &&
+      (updatedData.visualIdentity.logoUrl.startsWith('blob:') ||
+        updatedData.visualIdentity.logoUrl.startsWith('data:'))) {
+
       console.log('🖼️ Fazendo upload do logo...');
       const logoResult = await uploadImage(
         updatedData.visualIdentity.logoUrl,
         projectId,
-        'logo'
+        'logo',
+        projectContext
       );
       updatedData.visualIdentity.logoUrl = logoResult.url;
       console.log('✅ Logo uploaded:', logoResult.url);
@@ -204,28 +296,40 @@ export async function processProjectImages(projectData: any): Promise<any> {
     // Processar imagens em additionalResources
     if (updatedData.additionalResources?.images?.length > 0) {
       console.log(`🖼️ Processando ${updatedData.additionalResources.images.length} imagens adicionais...`);
-      
+
       for (let i = 0; i < updatedData.additionalResources.images.length; i++) {
         const image = updatedData.additionalResources.images[i];
-        
-        if (typeof image === 'string' && 
-            (image.startsWith('blob:') || image.startsWith('data:'))) {
-          
-          const imageResult = await uploadImage(image, projectId, `additional-${i}`);
+
+        // Se for objeto com url (estrutura nova)
+        if (image && typeof image === 'object' && image.url &&
+          (image.url.startsWith('blob:') || image.url.startsWith('data:'))) {
+
+          const imageResult = await uploadImage(image.url, projectId, `additional-${i}`, projectContext);
+          updatedData.additionalResources.images[i].url = imageResult.url;
+          console.log(`✅ Imagem ${i + 1} uploaded:`, imageResult.url);
+
+        } else if (typeof image === 'string' &&
+          (image.startsWith('blob:') || image.startsWith('data:'))) {
+          // Se for string direta (legado ou simplificado)
+          const imageResult = await uploadImage(image, projectId, `additional-${i}`, projectContext);
           updatedData.additionalResources.images[i] = imageResult.url;
           console.log(`✅ Imagem ${i + 1} uploaded:`, imageResult.url);
         }
       }
     }
 
-    // Processar outras possíveis imagens no JSON
+    // Processar outras possíveis imagens no JSON (recursivo)
     const processImageField = async (obj: any, path: string[] = []): Promise<void> => {
       for (const [key, value] of Object.entries(obj)) {
-        if (typeof value === 'string' && 
-            (value.startsWith('blob:') || value.startsWith('data:image'))) {
-          
+        // Pular campos já processados
+        if (path.includes('visualIdentity') && key === 'logoUrl') continue;
+        if (path.includes('additionalResources') && key === 'images') continue;
+
+        if (typeof value === 'string' &&
+          (value.startsWith('blob:') || value.startsWith('data:image'))) {
+
           const fieldName = [...path, key].join('-');
-          const imageResult = await uploadImage(value, projectId, fieldName);
+          const imageResult = await uploadImage(value, projectId, fieldName, projectContext);
           obj[key] = imageResult.url;
           console.log(`✅ Campo ${fieldName} uploaded:`, imageResult.url);
         } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -235,7 +339,7 @@ export async function processProjectImages(projectData: any): Promise<any> {
     };
 
     await processImageField(updatedData);
-    
+
     return updatedData;
   } catch (error) {
     console.error('Erro ao processar imagens do projeto:', error);
@@ -245,6 +349,7 @@ export async function processProjectImages(projectData: any): Promise<any> {
 
 export default {
   uploadFile,
+  uploadGenericImage,
   uploadImage,
   generateSignedUrl,
   fileExists,

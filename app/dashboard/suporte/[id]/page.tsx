@@ -116,15 +116,19 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
                     })
                 })
 
-                if (uploadRes.ok) {
-                    const uploadData = await uploadRes.json()
-                    if (uploadData.successful?.[0]) {
-                        attachments.push({
-                            url: uploadData.successful[0].url,
-                            filename: selectedFile.name,
-                            type: selectedFile.type.startsWith("image/") ? "image" : "file"
-                        })
-                    }
+                if (!uploadRes.ok) {
+                    throw new Error("Erro ao fazer upload da imagem")
+                }
+
+                const uploadData = await uploadRes.json()
+                if (uploadData.successful?.[0]) {
+                    attachments.push({
+                        url: uploadData.successful[0].url,
+                        filename: selectedFile.name,
+                        type: selectedFile.type.startsWith("image/") ? "image" : "file"
+                    })
+                } else {
+                    throw new Error("Falha ao processar upload da imagem")
                 }
             }
 
@@ -255,8 +259,8 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
                                         </Avatar>
 
                                         <div className={`group relative rounded-2xl p-4 shadow-sm ${isMe
-                                                ? "bg-primary text-primary-foreground rounded-tr-none"
-                                                : "bg-white dark:bg-card border rounded-tl-none"
+                                            ? "bg-primary text-primary-foreground rounded-tr-none"
+                                            : "bg-white dark:bg-card border rounded-tl-none"
                                             }`}>
                                             <div className="flex items-center justify-between gap-4 mb-1">
                                                 <span className={`text-xs font-medium ${isMe ? "text-primary-foreground/80" : "text-muted-foreground"}`}>

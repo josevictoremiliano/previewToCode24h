@@ -30,6 +30,8 @@ interface FormData {
     products: string[]
     cta: string
     sections: string[]
+    features: string[]
+    videoUrl?: string
   }
   contact: {
     email: string
@@ -44,9 +46,13 @@ interface FormData {
     }
   }
   additionalResources: {
-    images: File[]
+    images: {
+      file: File
+      position: 'hero' | 'about' | 'credibility' | 'gallery' | 'logo' | 'favicon' | 'unassigned'
+      id: string
+    }[]
     customTexts: string
-    features: string[]
+    aiGeneratedImages: boolean
   }
 }
 
@@ -60,28 +66,31 @@ interface Props {
 export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
   const getSectionLabel = (sectionId: string) => {
     const sections: Record<string, string> = {
-      "sobre": "Sobre",
-      "servicos": "Serviços", 
-      "portfolio": "Portfólio",
+      "hero": "Seção Hero",
+      "beneficios": "Benefícios",
+      "como-funciona": "Como Funciona",
       "depoimentos": "Depoimentos",
-      "contato": "Contato",
-      "blog": "Blog",
+      "precos": "Preços",
       "faq": "FAQ",
-      "equipe": "Equipe"
+      "garantia": "Garantia",
+      "urgencia": "Urgência",
+      "sobre": "Sobre Nós",
+      "galeria": "Galeria",
+      "localizacao": "Localização"
     }
     return sections[sectionId] || sectionId
   }
 
   const getFeatureLabel = (featureId: string) => {
     const features: Record<string, string> = {
-      "contact-form": "Formulário de Contato",
+      "lead-form": "Formulário de Captura",
+      "countdown-timer": "Timer de Urgência",
       "whatsapp-chat": "Chat WhatsApp",
-      "newsletter": "Newsletter",
       "testimonials": "Depoimentos",
-      "gallery": "Galeria de Imagens",
-      "blog": "Blog/Notícias",
-      "maps": "Mapa de Localização",
-      "social-feed": "Feed Social"
+      "pricing-table": "Tabela de Preços",
+      "video-hero": "Vídeo de Apresentação",
+      "popup-exit": "Pop-up de Saída",
+      "progress-bar": "Barra de Progresso"
     }
     return features[featureId] || featureId
   }
@@ -102,7 +111,7 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
           Confirme todas as informações antes de criar sua landing page
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Informações Básicas */}
@@ -141,7 +150,7 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Cor Primária:</span>
                 <div className="flex items-center gap-2">
-                  <div 
+                  <div
                     className="w-4 h-4 rounded border"
                     style={{ backgroundColor: data.visualIdentity.primaryColor }}
                   />
@@ -151,7 +160,7 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Cor Secundária:</span>
                 <div className="flex items-center gap-2">
-                  <div 
+                  <div
                     className="w-4 h-4 rounded border"
                     style={{ backgroundColor: data.visualIdentity.secondaryColor }}
                   />
@@ -188,7 +197,7 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
                   </p>
                 </div>
               )}
-              
+
               {data.content.targetAudience && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Público-alvo:</span>
@@ -228,6 +237,33 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
                   </div>
                 </div>
               )}
+
+              {data.content.features.length > 0 && (
+                <div>
+                  <span className="text-muted-foreground">Funcionalidades:</span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {data.content.features.map((feature, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {getFeatureLabel(feature)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {data.content.videoUrl && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">URL do Vídeo:</span>
+                  <a
+                    href={data.content.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-xs truncate max-w-[200px]"
+                  >
+                    {data.content.videoUrl}
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 
@@ -253,13 +289,13 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
                   <span className="font-medium">{data.contact.address}</span>
                 </div>
               )}
-              
+
               {/* Redes Sociais */}
               {Object.entries(data.contact.socialMedia).some(([, value]) => value) && (
                 <div>
                   <span className="text-muted-foreground">Redes Sociais:</span>
                   <div className="mt-1 space-y-1">
-                    {Object.entries(data.contact.socialMedia).map(([platform, value]) => 
+                    {Object.entries(data.contact.socialMedia).map(([platform, value]) =>
                       value && (
                         <div key={platform} className="flex justify-between text-xs">
                           <span className="capitalize">{platform}:</span>
@@ -285,7 +321,14 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
                   <span className="font-medium">{data.additionalResources.images.length} arquivo(s)</span>
                 </div>
               )}
-              
+
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Geração de Imagens com IA:</span>
+                <Badge variant={data.additionalResources.aiGeneratedImages ? "default" : "secondary"}>
+                  {data.additionalResources.aiGeneratedImages ? "Sim" : "Não"}
+                </Badge>
+              </div>
+
               {data.additionalResources.customTexts && (
                 <div>
                   <span className="text-muted-foreground">Textos Personalizados:</span>
@@ -293,19 +336,6 @@ export function Revisao({ data, onSubmit, onPrevious, isSubmitting }: Props) {
                     {data.additionalResources.customTexts.substring(0, 100)}
                     {data.additionalResources.customTexts.length > 100 ? "..." : ""}
                   </p>
-                </div>
-              )}
-
-              {data.additionalResources.features.length > 0 && (
-                <div>
-                  <span className="text-muted-foreground">Funcionalidades:</span>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {data.additionalResources.features.map((feature, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {getFeatureLabel(feature)}
-                      </Badge>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>

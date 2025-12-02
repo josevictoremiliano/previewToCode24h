@@ -1,16 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Icons } from "@/components/icons"
 import { toast } from "sonner"
+import { Switch } from "@/components/ui/switch"
 
 interface ImageWithPosition {
   file: File
@@ -21,65 +21,70 @@ interface ImageWithPosition {
 interface AdditionalResources {
   images: ImageWithPosition[]
   customTexts: string
-  features: string[]
+  aiGeneratedImages: boolean
 }
 
 interface Props {
   data: AdditionalResources
+  selectedSections: string[]
   onUpdate: (data: AdditionalResources) => void
   onNext: () => void
   onPrevious: () => void
 }
 
-const availableFeatures = [
-  { id: "lead-form", label: "Formulário de Captura", description: "Coleta emails e dados de prospects" },
-  { id: "countdown-timer", label: "Timer de Urgência", description: "Conta regressiva para ofertas" },
-  { id: "whatsapp-chat", label: "Chat WhatsApp", description: "Atendimento direto via WhatsApp" },
-  { id: "testimonials", label: "Depoimentos", description: "Prova social com feedbacks" },
-  { id: "pricing-table", label: "Tabela de Preços", description: "Comparação de planos/produtos" },
-  { id: "video-hero", label: "Vídeo de Apresentação", description: "Player de vídeo na hero section" },
-  { id: "popup-exit", label: "Pop-up de Saída", description: "Oferta quando usuário tenta sair" },
-  { id: "progress-bar", label: "Barra de Progresso", description: "Passos do processo de compra" },
-]
-
-const imagePositions = [
-  { value: "logo", label: "🏷️ Logo", description: "Logo da empresa (formato recomendado: PNG transparente)" },
-  { value: "favicon", label: "🔖 Favicon", description: "Ícone do site (formato recomendado: 32x32px)" },
-  { value: "hero", label: "🚀 Hero Principal", description: "Imagem de destaque na primeira seção" },
-  { value: "about", label: "👥 Sobre Nós", description: "Foto da equipe ou empresa" },
-  { value: "credibility", label: "🏆 Credibilidade", description: "Ambiente profissional ou certificações" },
-  { value: "gallery", label: "🖼️ Galeria", description: "Produtos, resultados ou portfólio" },
+const allImagePositions = [
+  { value: "logo", label: "🏷️ Logo", description: "Logo da empresa (formato recomendado: PNG transparente)", required: true },
+  { value: "favicon", label: "🔖 Favicon", description: "Ícone do site (formato recomendado: 32x32px)", required: true },
+  { value: "hero", label: "🚀 Hero Principal", description: "Imagem de destaque na primeira seção", section: "hero" },
+  { value: "about", label: "👥 Sobre Nós", description: "Foto da equipe ou empresa", section: "about" },
+  { value: "credibility", label: "🏆 Credibilidade", description: "Ambiente profissional ou certificações", section: "credibility" },
+  { value: "gallery", label: "🖼️ Galeria", description: "Produtos, resultados ou portfólio", section: "gallery" },
   { value: "unassigned", label: "📋 Não Definido", description: "Disponível para uso geral" }
 ]
 
-export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props) {
+export function RecursosAdicionais({ data, selectedSections, onUpdate, onNext, onPrevious }: Props) {
   const [formData, setFormData] = useState<AdditionalResources>(data)
+  const [isDragging, setIsDragging] = useState(false)
 
-  const handleChange = (field: keyof AdditionalResources, value: string | ImageWithPosition[] | string[]) => {
+  // Filtrar posições baseadas nas seções selecionadas
+  const filteredPositions = useMemo(() => {
+    return allImagePositions.filter(pos => {
+      // Logo, Favicon e Unassigned sempre aparecem
+      if (!pos.section) return true
+      // Outras posições dependem da seção estar selecionada
+      if (!selectedSections || selectedSections.length === 0) return true
+
+      return selectedSections.includes(pos.section)
+    })
+  }, [selectedSections])
+
+  const handleChange = (field: keyof AdditionalResources, value: any) => {
     const newData = { ...formData, [field]: value }
     setFormData(newData)
     onUpdate(newData)
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    
+  const handleImageUpload = (files: FileList | null) => {
+    if (!files) return
+
+    const fileArray = Array.from(files)
+
     // Validar tamanho total (máximo 50MB)
-    const totalSize = files.reduce((sum, file) => sum + file.size, 0)
+    const totalSize = fileArray.reduce((sum, file) => sum + file.size, 0)
     if (totalSize > 50 * 1024 * 1024) {
       toast.error("Tamanho total das imagens excede 50MB")
       return
     }
 
     // Validar tipos de arquivo
-    const invalidFiles = files.filter(file => !file.type.startsWith("image/"))
+    const invalidFiles = fileArray.filter(file => !file.type.startsWith("image/"))
     if (invalidFiles.length > 0) {
       toast.error("Apenas arquivos de imagem são permitidos")
       return
     }
 
     // Converter Files para ImageWithPosition
-    const newImages: ImageWithPosition[] = files.map((file, index) => ({
+    const newImages: ImageWithPosition[] = fileArray.map((file, index) => ({
       file,
       position: 'unassigned',
       id: `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`
@@ -94,29 +99,39 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
   }
 
   const updateImagePosition = (id: string, position: ImageWithPosition['position']) => {
-    const images = formData.images.map(img => 
+    const images = formData.images.map(img =>
       img.id === id ? { ...img, position } : img
     )
     handleChange("images", images)
   }
 
   const replaceImage = (id: string, newFile: File) => {
-    const images = formData.images.map(img => 
+    const images = formData.images.map(img =>
       img.id === id ? { ...img, file: newFile } : img
     )
     handleChange("images", images)
   }
 
-  const toggleFeature = (featureId: string) => {
-    const features = formData.features.includes(featureId)
-      ? formData.features.filter(f => f !== featureId)
-      : [...formData.features, featureId]
-    handleChange("features", features)
-  }
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onNext()
+  }
+
+  // Drag and Drop handlers
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    handleImageUpload(e.dataTransfer.files)
   }
 
   return (
@@ -130,27 +145,55 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
           Adicione elementos que aumentam a conversão
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
+
+          {/* AI Image Generation Toggle */}
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/20">
+            <div className="space-y-0.5">
+              <Label className="text-base">Geração de Imagens com IA</Label>
+              <p className="text-sm text-muted-foreground">
+                Quero que as imagens do site sejam geradas com Inteligência Artificial
+              </p>
+            </div>
+            <Switch
+              checked={formData.aiGeneratedImages}
+              onCheckedChange={(checked) => handleChange("aiGeneratedImages", checked)}
+            />
+          </div>
+
           {/* Upload de Imagens */}
           <div className="space-y-3">
-            <Label>Imagens do Produto/Serviço (Opcional)</Label>
+            <div className="flex items-center justify-between">
+              <Label>Imagens do Produto/Serviço</Label>
+              <span className="text-xs text-muted-foreground">Opcional</span>
+            </div>
             <p className="text-sm text-muted-foreground">
-              Adicione imagens do produto, mockups, resultados ou equipe. Máximo 10 imagens, 5MB cada.
+              Adicione imagens do produto, mockups, resultados ou equipe.
             </p>
-            
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+
+            <div
+              className={`border-2 border-dashed rounded-lg p-8 transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                }`}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+            >
               <div className="text-center">
-                <Icons.upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <Label htmlFor="images-upload" className="cursor-pointer">
-                  <span className="text-primary hover:underline">
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icons.upload className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <Label htmlFor="images-upload" className="cursor-pointer block">
+                  <span className="text-lg font-medium text-primary hover:underline">
                     Clique para fazer upload
                   </span>
-                  <span className="text-muted-foreground"> ou arraste e solte</span>
+                  <span className="block text-sm text-muted-foreground mt-1">
+                    ou arraste e solte seus arquivos aqui
+                  </span>
                 </Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  PNG, JPG até 5MB cada (máximo 10 imagens)
+                <p className="text-xs text-muted-foreground mt-4">
+                  PNG, JPG, WEBP até 5MB cada
                 </p>
                 <Input
                   id="images-upload"
@@ -158,39 +201,39 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
                   accept="image/*"
                   multiple
                   className="hidden"
-                  onChange={handleImageUpload}
+                  onChange={(e) => handleImageUpload(e.target.files)}
                 />
               </div>
             </div>
 
             {formData.images.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Icons.info className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Defina onde cada imagem deve aparecer no site. Você pode alterar, remover ou trocar as imagens.
+              <div className="space-y-4 mt-6">
+                <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300 rounded-md text-sm">
+                  <Icons.info className="h-4 w-4 flex-shrink-0" />
+                  <p>
+                    Defina onde cada imagem deve aparecer. <strong>Logo e Favicon são essenciais.</strong>
                   </p>
                 </div>
-                
+
                 <div className="grid gap-4">
                   {formData.images.map((imageWithPos) => (
-                    <div key={imageWithPos.id} className="flex gap-4 p-4 border rounded-lg bg-card">
+                    <div key={imageWithPos.id} className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg bg-card animate-in fade-in slide-in-from-bottom-2">
                       {/* Preview da Imagem */}
-                      <div className="relative">
-                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="relative group mx-auto sm:mx-0">
+                        <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0 border">
                           <img
                             src={URL.createObjectURL(imageWithPos.file)}
                             alt="Preview"
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        
+
                         {/* Botão de trocar imagem */}
                         <Button
                           type="button"
                           variant="secondary"
-                          size="sm"
-                          className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full p-0"
+                          size="icon"
+                          className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => {
                             const input = document.createElement('input')
                             input.type = 'file'
@@ -205,43 +248,49 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
                             input.click()
                           }}
                         >
-                          <Icons.edit className="h-3 w-3" />
+                          <Icons.edit className="h-4 w-4" />
                         </Button>
                       </div>
 
                       {/* Informações e Controles */}
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium truncate">{imageWithPos.file.name}</p>
+                      <div className="flex-1 space-y-3 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-medium truncate" title={imageWithPos.file.name}>
+                              {imageWithPos.file.name}
+                            </p>
                             <p className="text-xs text-muted-foreground">
                               {Math.round(imageWithPos.file.size / 1024)} KB
                             </p>
                           </div>
-                          
+
                           {/* Badge da Posição */}
-                          <Badge variant={imageWithPos.position === 'unassigned' ? 'secondary' : 'default'}>
-                            {imagePositions.find(p => p.value === imageWithPos.position)?.label}
+                          <Badge variant={imageWithPos.position === 'unassigned' ? 'secondary' : 'default'} className="whitespace-nowrap">
+                            {allImagePositions.find(p => p.value === imageWithPos.position)?.label || imageWithPos.position}
                           </Badge>
                         </div>
 
                         {/* Seletor de Posição */}
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs text-muted-foreground">Onde usar:</Label>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">Onde usar:</Label>
                           <Select
                             value={imageWithPos.position}
-                            onValueChange={(value: ImageWithPosition['position']) => 
+                            onValueChange={(value: any) =>
                               updateImagePosition(imageWithPos.id, value)
                             }
                           >
-                            <SelectTrigger className="h-8 text-xs">
+                            <SelectTrigger className="h-9 text-sm w-full">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {imagePositions.map(position => (
+                              {filteredPositions.map(position => (
                                 <SelectItem key={position.value} value={position.value}>
                                   <div className="flex flex-col">
-                                    <span>{position.label}</span>
+                                    <div className="flex items-center gap-2">
+                                      <span>{position.label}</span>
+                                      {/* @ts-ignore */}
+                                      {position.required && <Badge variant="outline" className="text-[10px] h-4 px-1">Obrigatório</Badge>}
+                                    </div>
                                     <span className="text-xs text-muted-foreground">
                                       {position.description}
                                     </span>
@@ -253,10 +302,10 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
                         </div>
 
                         {/* Ações */}
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 justify-end">
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => {
                               const url = URL.createObjectURL(imageWithPos.file)
@@ -266,11 +315,12 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
                             <Icons.eye className="h-3 w-3 mr-1" />
                             Visualizar
                           </Button>
-                          
+
                           <Button
                             type="button"
-                            variant="destructive"
+                            variant="ghost"
                             size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => {
                               removeImage(imageWithPos.id)
                               toast.success("Imagem removida!")
@@ -284,17 +334,25 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Resumo das Posições */}
-                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium mb-2">📊 Resumo das Posições:</p>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-                    {imagePositions.map(position => {
+                <div className="mt-4 p-4 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-3">📊 Resumo das Posições:</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 text-xs">
+                    {filteredPositions.map(position => {
                       const count = formData.images.filter(img => img.position === position.value).length
+                      const isRequired = (position.value === 'logo' || position.value === 'favicon')
+                      const isMissing = isRequired && count === 0
+
                       return (
-                        <div key={position.value} className="text-center">
-                          <div className="font-medium">{count}</div>
-                          <div className="text-muted-foreground">{position.label}</div>
+                        <div
+                          key={position.value}
+                          className={`flex flex-col items-center justify-center p-2 rounded border ${isMissing ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900" : "bg-background"
+                            }`}
+                        >
+                          <div className={`font-bold text-lg ${isMissing ? "text-red-500" : ""}`}>{count}</div>
+                          <div className="text-muted-foreground text-center leading-tight">{position.label}</div>
+                          {isMissing && <span className="text-[10px] text-red-500 font-medium mt-1">Faltando</span>}
                         </div>
                       )
                     })}
@@ -314,36 +372,6 @@ export function RecursosAdicionais({ data, onUpdate, onNext, onPrevious }: Props
               onChange={(e) => handleChange("customTexts", e.target.value)}
               rows={4}
             />
-          </div>
-
-          {/* Funcionalidades Especiais */}
-          <div className="space-y-3">
-            <Label>Funcionalidades Especiais (Opcional)</Label>
-            <div className="grid gap-3 md:grid-cols-2">
-              {availableFeatures.map((feature) => (
-                <div
-                  key={feature.id}
-                  className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50"
-                >
-                  <Checkbox
-                    id={feature.id}
-                    checked={formData.features.includes(feature.id)}
-                    onCheckedChange={() => toggleFeature(feature.id)}
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label
-                      htmlFor={feature.id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {feature.label}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="flex justify-between pt-6">

@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { Client } from "minio"
-
-const minioClient = new Client({
-    endPoint: process.env.MINIO_ENDPOINT || "localhost",
-    port: parseInt(process.env.MINIO_PORT || "9000"),
-    useSSL: process.env.MINIO_USE_SSL === "true",
-    accessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
-    secretKey: process.env.MINIO_SECRET_KEY || "minioadmin",
-})
+import { uploadGenericImage } from "@/lib/storage"
 
 export async function POST(req: NextRequest) {
     try {
@@ -26,27 +18,23 @@ export async function POST(req: NextRequest) {
             return new NextResponse("Image is required", { status: 400 })
         }
 
-        // Remove header data URL
-        const base64Data = image.replace(/^data:image\/\w+;base64,/, "")
-        const buffer = Buffer.from(base64Data, 'base64')
+        // Validar tamanho (ex: 5MB)
+        const base64Length = image.length - (image.indexOf(',') + 1);
+        const padding = (image.charAt(image.length - 1) === '=') ? (image.charAt(image.length - 2) === '=' ? 2 : 1) : 0;
+        const fileSizeInBytes = (base64Length * 0.75) - padding;
 
-        const bucketName = "ProfileImagens"
-        const fileName = `${session.user.id}-${Date.now()}.png`
-
-        // Ensure bucket exists
-        const bucketExists = await minioClient.bucketExists(bucketName)
-        if (!bucketExists) {
-            await minioClient.makeBucket(bucketName)
+        if (fileSizeInBytes > 5 * 1024 * 1024) {
+            return new NextResponse("Image too large (max 5MB)", { status: 400 })
         }
 
-        await minioClient.putObject(bucketName, fileName, buffer)
+        const bucketName = "ProfileImagens" // Mantendo compatibilidade com bucket existente se necessário, mas idealmente usaríamos um bucket unificado
+        // No entanto, o helper usa o bucket configurado no sistema.
+        // Vamos usar o prefixo 'profiles/' para organizar.
 
-        // Construct URL (assuming public access or similar setup)
-        // In a real scenario, you might need a presigned URL or a proxy
-        const protocol = process.env.MINIO_USE_SSL === "true" ? "https" : "http"
-        const url = `${protocol}://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${bucketName}/${fileName}`
+        const fileName = `${session.user.id}-${Date.now()}`
+        const result = await uploadGenericImage(image, `profiles/${fileName}`)
 
-        return NextResponse.json({ url })
+        return NextResponse.json({ url: result.url })
     } catch (error) {
         console.error("Error uploading profile image:", error)
         return new NextResponse("Internal Server Error", { status: 500 })

@@ -43,27 +43,6 @@ export function IdentidadeVisual({ data, onUpdate, onNext, onPrevious }: Props) 
     onUpdate(newData)
   }
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        toast.error("Arquivo muito grande. Máximo 5MB.")
-        return
-      }
-      
-      if (!file.type.startsWith("image/")) {
-        toast.error("Apenas arquivos de imagem são permitidos.")
-        return
-      }
-
-      handleChange("logoFile", file)
-      
-      // Criar URL para preview
-      const url = URL.createObjectURL(file)
-      handleChange("logoUrl", url)
-    }
-  }
-
   const addReferenceUrl = () => {
     if (referenceInput.trim()) {
       const urls = [...formData.referenceUrls, referenceInput.trim()]
@@ -93,59 +72,9 @@ export function IdentidadeVisual({ data, onUpdate, onNext, onPrevious }: Props) 
           Defina a aparência visual do seu site
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Upload de Logo */}
-          <div className="space-y-2">
-            <Label>Logo da Empresa (Opcional)</Label>
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-              {formData.logoUrl ? (
-                <div className="flex items-center justify-center">
-                  <div className="text-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={formData.logoUrl} 
-                      alt="Logo preview" 
-                      className="max-h-32 mx-auto mb-2"
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        handleChange("logoFile", null)
-                        handleChange("logoUrl", "")
-                      }}
-                    >
-                      Remover
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <Icons.upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <Label htmlFor="logo-upload" className="cursor-pointer">
-                    <span className="text-primary hover:underline">
-                      Clique para fazer upload
-                    </span>
-                    <span className="text-muted-foreground"> ou arraste e solte</span>
-                  </Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    PNG, JPG até 5MB
-                  </p>
-                  <Input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoUpload}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Cores */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -166,7 +95,7 @@ export function IdentidadeVisual({ data, onUpdate, onNext, onPrevious }: Props) 
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="secondaryColor">Cor Secundária</Label>
               <div className="flex gap-2">
@@ -192,13 +121,12 @@ export function IdentidadeVisual({ data, onUpdate, onNext, onPrevious }: Props) 
             <Label>Estilo Desejado</Label>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {styles.map((style) => (
-                <Card 
+                <Card
                   key={style.value}
-                  className={`cursor-pointer transition-colors ${
-                    formData.style === style.value 
-                      ? "border-primary bg-primary/5" 
+                  className={`cursor-pointer transition-colors ${formData.style === style.value
+                      ? "border-primary bg-primary/5"
                       : "hover:border-primary/50"
-                  }`}
+                    }`}
                   onClick={() => handleChange("style", style.value)}
                 >
                   <CardContent className="p-4">
@@ -224,7 +152,7 @@ export function IdentidadeVisual({ data, onUpdate, onNext, onPrevious }: Props) 
                 <Icons.plus className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {formData.referenceUrls.length > 0 && (
               <div className="space-y-2">
                 {formData.referenceUrls.map((url, index) => (

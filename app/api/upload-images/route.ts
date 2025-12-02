@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { uploadImage } from "@/lib/storage"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
-    const { images, projectId } = await request.json()
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { images, projectId, userId, projectName, createdAt } = await request.json()
 
     if (!images || !Array.isArray(images) || !projectId) {
       return NextResponse.json(
@@ -14,7 +21,24 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Processando ${images.length} imagens para projeto ${projectId}...`)
 
-    const uploadPromises = images.map(async (imageData, index) => {
+    // Contexto do projeto para uploads de suporte ou novos projetos
+    let projectContext = undefined
+    if (projectId === "support_ticket") {
+      projectContext = {
+        userId: session.user.id,
+        name: "Support",
+        createdAt: new Date()
+      }
+    } else if (userId && projectName) {
+      // Contexto fornecido explicitamente (para novos projetos)
+      projectContext = {
+        userId: userId,
+        name: projectName,
+        createdAt: createdAt ? new Date(createdAt) : new Date()
+      }
+    }
+
+    const uploadPromises = images.map(async (imageData: string, index: number) => {
       try {
         // Validar formato da imagem
         if (!imageData.startsWith('data:image/')) {
@@ -22,10 +46,15 @@ export async function POST(request: NextRequest) {
         }
 
         // Upload para MinIO
-        const result = await uploadImage(imageData, projectId, `image-${index + 1}`)
-        
+        const result = await uploadImage(
+          imageData,
+          projectId,
+          `image-${index + 1}`,
+          projectContext
+        )
+
         console.log(`✅ Imagem ${index + 1} uploaded:`, result.url)
-        
+
         return {
           originalIndex: index,
           url: result.url,
@@ -58,9 +87,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error("❌ Erro no upload múltiplo:", error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: "Erro interno do servidor",
         details: error instanceof Error ? error.message : "Erro desconhecido"
       },

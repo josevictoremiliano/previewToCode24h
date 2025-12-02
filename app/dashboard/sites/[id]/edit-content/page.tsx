@@ -143,9 +143,11 @@ export default function EditProjectContent({ params }: Props) {
         })
       }
 
-      // Sync Logo
-      if (projectData.data?.visualIdentity?.logoUrl) {
-        const logoUrl = projectData.data.visualIdentity.logoUrl
+      // Sync Logo & Favicon
+      if (projectData.data?.visualIdentity) {
+        const { logoUrl, faviconUrl } = projectData.data.visualIdentity
+
+        // Sync Logo
         if (logoUrl && !logoUrl.startsWith('blob:') && !logoUrl.startsWith('data:')) {
           const hasLogo = images.some(img => img.position === 'logo')
           if (!hasLogo) {
@@ -156,10 +158,29 @@ export default function EditProjectContent({ params }: Props) {
               filename: 'Logo Atual'
             })
           } else {
-            // Update existing logo if it's a blob
             images = images.map(img => {
               if (img.position === 'logo' && (img.url.startsWith('blob:') || img.url.startsWith('data:'))) {
                 return { ...img, url: logoUrl }
+              }
+              return img
+            })
+          }
+        }
+
+        // Sync Favicon
+        if (faviconUrl && !faviconUrl.startsWith('blob:') && !faviconUrl.startsWith('data:')) {
+          const hasFavicon = images.some(img => img.position === 'favicon')
+          if (!hasFavicon) {
+            images.unshift({
+              id: 'favicon-from-identity',
+              url: faviconUrl,
+              position: 'favicon',
+              filename: 'Favicon Atual'
+            })
+          } else {
+            images = images.map(img => {
+              if (img.position === 'favicon' && (img.url.startsWith('blob:') || img.url.startsWith('data:'))) {
+                return { ...img, url: faviconUrl }
               }
               return img
             })
@@ -183,19 +204,74 @@ export default function EditProjectContent({ params }: Props) {
       fetchProject(resolvedParams.id)
     }
   }, [resolvedParams])
+  const saveChanges = async (
+    overrideImages?: ImageWithPosition[],
+    overrideContent?: ProjectContent
+  ) => {
+    if (!resolvedParams?.id) return
+
+    setSaving(true)
+    try {
+      const imagesToSave = overrideImages || images
+      const contentToSave = overrideContent || content
+
+      // Extract logo and favicon URLs from images
+      const logoImage = imagesToSave.find(img => img.position === 'logo')
+      const logoUrl = logoImage ? logoImage.url : undefined
+
+      const faviconImage = imagesToSave.find(img => img.position === 'favicon')
+      const faviconUrl = faviconImage ? faviconImage.url : undefined
+
+      // Prepare content payload with logoUrl and faviconUrl
+      const contentPayload = { ...contentToSave, logoUrl, faviconUrl }
+
+      // Execute requests sequentially to avoid race conditions on the JSON 'data' column
+      await fetch(`/api/projects/${resolvedParams.id}/content`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: contentPayload })
+      })
+
+      await fetch(`/api/projects/${resolvedParams.id}/images`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: imagesToSave })
+      })
+
+      // Reload project data to ensure UI is in sync
+      await fetchProject(resolvedParams.id)
+
+      toast.success("Alterações salvas com sucesso!")
+    } catch (error) {
+      toast.error("Erro ao salvar alterações")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const getImagesByPosition = (position: ImageWithPosition['position']) => {
+    return images.filter(img => img.position === position)
+  }
+
   const updateContent = (field: keyof ProjectContent, value: string) => {
     setContent(prev => ({ ...prev, [field]: value }))
   }
 
   const updateImagePosition = (id: string, position: ImageWithPosition['position']) => {
-    setImages(prev => prev.map(img =>
+    const newImages = images.map(img =>
       img.id === id ? { ...img, position } : img
-    ))
+    )
+    setImages(newImages)
+    // Auto-save on position change
+    saveChanges(newImages)
   }
 
   const removeImage = (id: string) => {
-    setImages(prev => prev.filter(img => img.id !== id))
+    const newImages = images.filter(img => img.id !== id)
+    setImages(newImages)
     toast.success("Imagem removida!")
+    // Auto-save on removal
+    saveChanges(newImages)
   }
 
   const addNewImages = async (files: FileList | null, targetPosition?: ImageWithPosition['position']) => {
@@ -220,7 +296,9 @@ export default function EditProjectContent({ params }: Props) {
           body: JSON.stringify({
             imageData: base64,
             projectId: resolvedParams.id,
-            imageName: file.name.replace(/\.[^/.]+$/, '')
+            imageName: targetPosition === 'logo' ? 'logo' :
+              targetPosition === 'favicon' ? 'favicon' :
+                file.name.replace(/\.[^/.]+$/, '')
           })
         })
 
@@ -245,51 +323,18 @@ export default function EditProjectContent({ params }: Props) {
       const validImages = results.filter((img): img is ImageWithPosition => img !== null)
 
       if (validImages.length > 0) {
-        setImages(prev => [...prev, ...validImages])
+        const newImages = [...images, ...validImages]
+        setImages(newImages)
         toast.success(`${validImages.length} imagem(ns) enviada(s)!`, { id: loadingToast })
+
+        // Auto-save after upload
+        await saveChanges(newImages)
       } else {
         toast.error("Falha ao enviar imagens", { id: loadingToast })
       }
     } catch (error) {
       toast.error("Erro ao processar imagens", { id: loadingToast })
     }
-  }
-
-  const saveChanges = async () => {
-    if (!resolvedParams?.id) return
-
-    setSaving(true)
-    try {
-      // Extract logo URL from images
-      const logoImage = images.find(img => img.position === 'logo')
-      const logoUrl = logoImage ? logoImage.url : undefined
-
-      // Prepare content payload with logoUrl
-      const contentPayload = { ...content, logoUrl }
-
-      await Promise.all([
-        fetch(`/api/projects/${resolvedParams.id}/content`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: contentPayload })
-        }),
-        fetch(`/api/projects/${resolvedParams.id}/images`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ images })
-        })
-      ])
-
-      toast.success("Alterações salvas com sucesso!")
-    } catch (error) {
-      toast.error("Erro ao salvar alterações")
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const getImagesByPosition = (position: ImageWithPosition['position']) => {
-    return images.filter(img => img.position === position)
   }
 
   if (loading) {
@@ -324,7 +369,7 @@ export default function EditProjectContent({ params }: Props) {
             <p className="text-muted-foreground">Gerenciamento de conteúdo e mídia</p>
           </div>
         </div>
-        <Button onClick={saveChanges} disabled={saving} size="lg" className="shadow-sm">
+        <Button onClick={() => saveChanges()} disabled={saving} size="lg" className="shadow-sm">
           {saving ? <Icons.spinner className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
           Salvar Alterações
         </Button>

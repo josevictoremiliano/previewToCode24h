@@ -130,34 +130,49 @@ export default function AdminTicketsPage() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        images: [{ data: base64, filename: selectedFile.name }],
-                        project: 'support_tickets'
+                        images: [base64],
+                        projectId: 'support_ticket'
                     })
                 })
 
-                if (uploadResponse.ok) {
-                    const uploadData = await uploadResponse.json()
-                    attachments = uploadData.urls.map((url: string, index: number) => ({
-                        url,
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text()
+                    console.error('Erro Upload:', uploadResponse.status, errorText)
+                    throw new Error(`Erro ao fazer upload da imagem: ${uploadResponse.status}`)
+                }
+
+                const uploadData = await uploadResponse.json()
+                if (uploadData.successful?.[0]) {
+                    attachments.push({
+                        url: uploadData.successful[0].url,
                         filename: selectedFile.name,
                         type: 'image'
-                    }))
+                    })
+                } else {
+                    throw new Error("Falha ao processar upload da imagem")
                 }
             }
+
+            const payload = {
+                content: newMessage,
+                isFromAdmin: true,
+                attachments
+            }
+            console.log("Sending payload:", payload)
 
             const response = await fetch(`/api/tickets/${selectedTicket.id}/messages`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    content: newMessage,
-                    isFromAdmin: true,
-                    attachments
-                })
+                body: JSON.stringify(payload)
             })
 
-            if (!response.ok) throw new Error('Erro ao enviar mensagem')
+            if (!response.ok) {
+                const errorText = await response.text()
+                console.error('Erro API:', response.status, errorText)
+                throw new Error(`Erro API: ${response.status} ${errorText}`)
+            }
 
             const newMsg = await response.json()
             setMessages(prev => [...prev, newMsg])
@@ -168,8 +183,9 @@ export default function AdminTicketsPage() {
             // Atualizar a lista de tickets
             fetchTickets()
         } catch (error) {
-            console.error('Erro ao enviar mensagem:', error)
-            toast.error("Erro ao enviar mensagem")
+            console.error('Erro ao enviar mensagem (Catch):', error)
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            toast.error(`Erro: ${errorMessage}`)
         } finally {
             setIsSending(false)
         }
@@ -306,8 +322,8 @@ export default function AdminTicketsPage() {
                                         <div
                                             key={ticket.id}
                                             className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedTicket?.id === ticket.id
-                                                    ? 'bg-muted border-primary'
-                                                    : 'hover:bg-muted/50'
+                                                ? 'bg-muted border-primary'
+                                                : 'hover:bg-muted/50'
                                                 }`}
                                             onClick={() => setSelectedTicket(ticket)}
                                         >
@@ -402,8 +418,8 @@ export default function AdminTicketsPage() {
                                                     )}
                                                     <div
                                                         className={`max-w-[70%] rounded-lg p-3 ${message.isFromAdmin
-                                                                ? 'bg-primary text-primary-foreground'
-                                                                : 'bg-muted'
+                                                            ? 'bg-primary text-primary-foreground'
+                                                            : 'bg-muted'
                                                             }`}
                                                     >
                                                         {message.isFromAdmin && (
@@ -441,8 +457,8 @@ export default function AdminTicketsPage() {
                                                         )}
                                                         <p
                                                             className={`text-xs mt-1 ${message.isFromAdmin
-                                                                    ? 'text-primary-foreground/70'
-                                                                    : 'text-muted-foreground'
+                                                                ? 'text-primary-foreground/70'
+                                                                : 'text-muted-foreground'
                                                                 }`}
                                                         >
                                                             {new Date(message.createdAt).toLocaleString()}
